@@ -43,7 +43,7 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass = 'io.github.micwan88.App'
+    mainClass = 'io.github.micwan88.moneytab.WebBot'
 }
 
 tasks.named('test') {
