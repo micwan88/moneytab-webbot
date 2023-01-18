@@ -11,17 +11,34 @@ plugins {
     id 'application'
 }
 
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+group = 'io.github.micwan88'
+version = '1.0.0-SNAPSHOT'
+
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
 }
 
 dependencies {
+
+	//Log4j2
+    implementation 'org.apache.logging.log4j:log4j-api:2.19.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
+	
+	//Gson
+    implementation 'com.google.code.gson:gson:2.10'
+
+    //helperclass4j
+    implementation 'io.github.micwan88:helperclass4j:2.0.1'
+    
+    //selenium
+    implementation 'org.seleniumhq.selenium:selenium-java:4.7.2'
+    
     // Use JUnit Jupiter for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.1'
-
-    // This dependency is used by the application.
-    implementation 'com.google.guava:guava:31.1-jre'
 }
 
 application {
