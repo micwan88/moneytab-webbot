@@ -1,2 +1,2 @@
 # moneytab-webbot
-A web bot for moneytab
+A web bot for reading notification from moneytab
