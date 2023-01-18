@@ -2,12 +2,14 @@ package io.github.micwan88.moneytab;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import io.github.micwan88.helperclass4j.AppPropertiesUtil;
@@ -16,10 +18,11 @@ public class WebBot implements Closeable {
 	
 	private static final Logger myLogger = LogManager.getLogger(WebBot.class);
 	
+	private ChromeDriverService chromeDriverService = null;
 	private WebDriver webDriver = null;
 	
 	private boolean browserHeadlessMode = false;
-	private boolean browserDetachWhenErr = false;
+	private boolean browserDetachMode = false;
 	private File browserUserData = null;
 	
 	public int loadAppParameters(Properties appProperties) {
@@ -28,9 +31,9 @@ public class WebBot implements Closeable {
 			browserHeadlessMode = true;
 		}
 		
-		tempStr = appProperties.getProperty("moneytab.bot.browserDetachWhenError");
+		tempStr = appProperties.getProperty("moneytab.bot.browserDetachMode");
 		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
-			browserDetachWhenErr = true;
+			browserDetachMode = true;
 		}
 		
 		tempStr = appProperties.getProperty("moneytab.bot.browserUserData");
@@ -49,7 +52,7 @@ public class WebBot implements Closeable {
 	public void debugParams() {
 		myLogger.debug("Debug Params ...");
 		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserHeadlessMode", browserHeadlessMode);
-		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserDetachWhenError", browserDetachWhenErr);
+		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserDetachMode", browserDetachMode);
 		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserUserData", browserUserData != null ? browserUserData.getAbsolutePath() : null);
 	}
 	
@@ -77,6 +80,8 @@ public class WebBot implements Closeable {
 			webBot.init();
 			
 			//returnCode = webBot.startProcess();
+		} catch (IOException e) {
+			myLogger.error("Error", e);
 		} finally {
 			webBot.close();
 		}
@@ -85,20 +90,28 @@ public class WebBot implements Closeable {
 			System.exit(-3);
 	}
 	
-	public void init() {
+	public void init() throws IOException {
+		chromeDriverService = new ChromeDriverService.Builder().usingAnyFreePort().build();
+		chromeDriverService.start();
+		
 		ChromeOptions chromeOptions = new ChromeOptions();
 		chromeOptions.setHeadless(browserHeadlessMode);
 		if (browserUserData != null)
 			chromeOptions.addArguments("user-data-dir=" + browserUserData.getAbsolutePath());
 		chromeOptions.addArguments("--remote-debugging-port=9222");
+		chromeOptions.setExperimentalOption("detach", true);
 		
-		webDriver = new ChromeDriver(chromeOptions);
+		webDriver = new ChromeDriver(chromeDriverService, chromeOptions);
 	}
 
 	@Override
 	public void close() {
-		if (webDriver != null)
+		//Not close brower when run in detach mode
+		if (!browserDetachMode && webDriver != null)
 			webDriver.quit();
+		
+		if (chromeDriverService != null)
+			chromeDriverService.stop();
 	}
 	
 	public String loadMoneyTabWeb() {

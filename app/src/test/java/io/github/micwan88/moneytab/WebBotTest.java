@@ -5,6 +5,7 @@ package io.github.micwan88.moneytab;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.io.IOException;
 import java.util.Properties;
 
 import org.junit.jupiter.api.AfterAll;
@@ -17,11 +18,12 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 class WebBotTest {
 	WebBot webBot = new WebBot();
 	
-	@BeforeAll void beforeTest() {
+	@BeforeAll void beforeTest() throws IOException {
 		//Hard code test properties
 		Properties appProperties = new Properties();
 		appProperties.put("moneytab.bot.browserHeadlessMode", "false");
 		appProperties.put("moneytab.bot.browserUserData", "userdata");
+		appProperties.put("moneytab.bot.browserDetachMode", "false");
 		
 		webBot.loadAppParameters(appProperties);
 		
