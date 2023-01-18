@@ -7,3 +7,7 @@ build
 .classpath
 .settings
 /app/bin
+
+#From app
+/app/userdata
+/app/app.log

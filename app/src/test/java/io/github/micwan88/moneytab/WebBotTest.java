@@ -5,11 +5,36 @@ package io.github.micwan88.moneytab;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.jupiter.api.Test;
+import java.util.Properties;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
+
+@TestInstance(Lifecycle.PER_CLASS)
 class WebBotTest {
+	WebBot webBot = new WebBot();
+	
+	@BeforeAll void beforeTest() {
+		//Hard code test properties
+		Properties appProperties = new Properties();
+		appProperties.put("moneytab.bot.browserHeadlessMode", "false");
+		appProperties.put("moneytab.bot.browserUserData", "userdata");
+		
+		webBot.loadAppParameters(appProperties);
+		
+		webBot.debugParams();
+		
+		webBot.init();
+	}
+	
+	@AfterAll void afterTest() {
+		webBot.close();
+	}
+	
     @Test void webBotTest() {
-        WebBot classUnderTest = new WebBot();
-        assertNotNull(classUnderTest.dummyTest(), "Test");
+        assertNotNull(webBot.loadMoneyTabWeb(), "loadMoneyTabWeb");
     }
 }
