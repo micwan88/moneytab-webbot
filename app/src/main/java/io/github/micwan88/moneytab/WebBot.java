@@ -3,14 +3,21 @@ package io.github.micwan88.moneytab;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import io.github.micwan88.helperclass4j.AppPropertiesUtil;
 
@@ -24,6 +31,21 @@ public class WebBot implements Closeable {
 	private boolean browserHeadlessMode = false;
 	private boolean browserDetachMode = false;
 	private File browserUserData = null;
+	
+	private long waitTimeout = 5000L;
+	private long sleepTime = 10000L;
+	
+	private String login = "";
+	private String password = "";
+	
+	private long parseLong(String arg) {
+		try {
+			return Long.parseLong(arg);
+		} catch (NumberFormatException e) {
+			myLogger.error("Invalid param: {}", arg);
+		}
+		return 0L;
+	}
 	
 	public int loadAppParameters(Properties appProperties) {
 		String tempStr = appProperties.getProperty("moneytab.bot.browserHeadlessMode");
@@ -46,6 +68,36 @@ public class WebBot implements Closeable {
 			}
 		}
 		
+		tempStr = appProperties.getProperty("moneytab.bot.browserWaitTimeout");
+		if (tempStr != null && !tempStr.trim().isEmpty()) {
+			waitTimeout = parseLong(tempStr);
+			
+			if (waitTimeout == 0L) {
+				myLogger.error("Invalid moneytab.bot.browserWaitTimeout: {}", tempStr);
+				return -1;
+			}
+		}
+		
+		tempStr = appProperties.getProperty("moneytab.bot.sleepTime");
+		if (tempStr != null && !tempStr.trim().isEmpty()) {
+			sleepTime = parseLong(tempStr);
+			
+			if (sleepTime == 0L) {
+				myLogger.error("Invalid moneytab.bot.sleepTime: {}", tempStr);
+				return -1;
+			}
+		}
+		
+		tempStr = appProperties.getProperty("moneytab.bot.login");
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			login = tempStr.trim();
+		}
+		
+		tempStr = appProperties.getProperty("moneytab.bot.password");
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			password = tempStr.trim();
+		}
+		
 		return 0;
 	}
 	
@@ -54,6 +106,10 @@ public class WebBot implements Closeable {
 		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserHeadlessMode", browserHeadlessMode);
 		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserDetachMode", browserDetachMode);
 		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserUserData", browserUserData != null ? browserUserData.getAbsolutePath() : null);
+		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserWaitTimeout", waitTimeout);
+		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.sleepTime", sleepTime);
+		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.login", login);
+		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.password", password);
 	}
 	
 	public static void main(String[] args) {
@@ -79,9 +135,11 @@ public class WebBot implements Closeable {
 		try {
 			webBot.init();
 			
-			//returnCode = webBot.startProcess();
+			boolean result = webBot.loginMoneyTabWeb(webBot.getLogin(), webBot.getPassword());
 		} catch (IOException e) {
-			myLogger.error("Error", e);
+			myLogger.error("Chromedriver init error", e);
+		} catch (Exception e) {
+			myLogger.error("Unexpected error", e);
 		} finally {
 			webBot.close();
 		}
@@ -95,11 +153,17 @@ public class WebBot implements Closeable {
 		chromeDriverService.start();
 		
 		ChromeOptions chromeOptions = new ChromeOptions();
-		chromeOptions.setHeadless(browserHeadlessMode);
+		//Not sure why we need this when in Linux, may be bug of chromedriver ?
+		chromeOptions.addArguments("--remote-debugging-port=9222");
+		
+		if (browserHeadlessMode)
+			chromeOptions.setHeadless(true);
+		
 		if (browserUserData != null)
 			chromeOptions.addArguments("user-data-dir=" + browserUserData.getAbsolutePath());
-		chromeOptions.addArguments("--remote-debugging-port=9222");
-		chromeOptions.setExperimentalOption("detach", true);
+		
+		if (browserDetachMode)
+			chromeOptions.setExperimentalOption("detach", true);
 		
 		webDriver = new ChromeDriver(chromeDriverService, chromeOptions);
 	}
@@ -114,12 +178,92 @@ public class WebBot implements Closeable {
 			chromeDriverService.stop();
 	}
 	
-	public String loadMoneyTabWeb() {
-		myLogger.debug("startProcess ...");
+	public boolean loginMoneyTabWeb(String username, String password) {
+		myLogger.debug("Start loginMoneyTabWeb");
 		
-		webDriver.get("https://www.money-tab.com");
+		String targetURL = "https://www.money-tab.com";
+		myLogger.debug("Target URL: {}", targetURL);
 		
-		myLogger.debug("startProcess end");
-		return "";
+		try {
+			webDriver.get(targetURL);
+			
+			if (checkIfAlreadyLogon())
+				return true;
+			
+			myLogger.debug("Checking if loginButton here");
+			
+			WebElement loginButton = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(driver -> driver.findElement(By.cssSelector("section > div > div > span[role='button']:has(> span)")));
+			
+			String buttonTitle = loginButton.getText();
+			if (!buttonTitle.equals("登入")) {
+				myLogger.error("Cannot find login button : {}", webDriver.getTitle());
+				return false;
+			}
+			
+			myLogger.debug("loginButton found.");
+			
+			loginButton.click();
+			
+			WebElement loginForm = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(driver -> driver.findElement(By.cssSelector("form:has(input#username)")));
+			
+			myLogger.debug("loginForm found.");
+			
+			WebElement usernameField = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(ExpectedConditions.visibilityOf(loginForm.findElement(By.cssSelector("input#username"))));
+			
+			WebElement passwdField = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(ExpectedConditions.visibilityOf(loginForm.findElement(By.cssSelector("input#password"))));
+			
+			myLogger.debug("usernameField, passwdField found.");
+			
+			usernameField.sendKeys(username);
+			passwdField.sendKeys(password);
+			
+			WebElement submitButton = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(ExpectedConditions.elementToBeClickable(loginForm.findElement(By.cssSelector("button[type='submit']"))));
+			
+			myLogger.debug("submitButton found and try login ...");
+			
+			submitButton.click();
+			
+			if (checkIfAlreadyLogon())
+				return true;
+			
+			//Login failed
+			WebElement loginResult = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(ExpectedConditions.visibilityOf(loginForm.findElement(By.cssSelector("div > div.input-row + div.input-row + div"))));
+			myLogger.error("Login failed result: {}", loginResult.getText());
+		} catch (NoSuchElementException e) {
+			myLogger.error("Cannot find related element in : " + webDriver.getTitle(), e);
+		} catch (Exception e) {
+			myLogger.error("Unknown error", e);
+		} finally {
+			myLogger.debug("End loginMoneyTabWeb");
+		}
+		return false;
+	}
+	
+	private boolean checkIfAlreadyLogon() {
+		myLogger.debug("Check if already logon ...");
+		try {
+			WebElement profileLink = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/profile/account']:has(svg.svg-icon)")));
+			
+			myLogger.debug("Logon profileLink is displayed : {}", profileLink.isDisplayed());
+			return true;
+		} catch (TimeoutException tie) {
+			//Nothing
+		}
+		return false;
+	}
+
+	public String getLogin() {
+		return login;
+	}
+
+	public String getPassword() {
+		return password;
 	}
 }
