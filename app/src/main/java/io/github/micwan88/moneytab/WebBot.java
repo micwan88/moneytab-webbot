@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
@@ -238,16 +239,39 @@ public class WebBot implements Closeable {
 		} catch (NoSuchElementException e) {
 			myLogger.error("Cannot find related element in : " + webDriver.getTitle(), e);
 		} catch (Exception e) {
-			myLogger.error("Unknown error", e);
+			myLogger.error("Unexpected error", e);
 		} finally {
 			myLogger.debug("End loginMoneyTabWeb");
 		}
 		return false;
 	}
 	
-	private boolean checkIfAlreadyLogon() {
-		myLogger.debug("Check if already logon ...");
+	public List<String> extractNotificationList() {
+		myLogger.debug("Start extractNotificationList");
+		
+		String targetURL = "https://www.money-tab.com/profile/notification";
+		myLogger.debug("Target URL: {}", targetURL);
+		
 		try {
+			webDriver.get(targetURL);
+			
+			if (checkIfPageURLMatched(targetURL)) {
+				myLogger.error("Notification page has been redirect to : {}", webDriver.getCurrentUrl());
+				return null;
+			}
+		} catch (Exception e) {
+			myLogger.error("Unexpected error", e);
+		} finally {
+			myLogger.debug("End extractNotificationList");
+		}
+		return null;
+	}
+	
+	private boolean checkIfAlreadyLogon() {
+		myLogger.debug("Start checkIfAlreadyLogon");
+		try {
+			myLogger.debug("Try find profile account link ...");
+			
 			WebElement profileLink = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
 					.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/profile/account']:has(svg.svg-icon)")));
 			
@@ -255,6 +279,21 @@ public class WebBot implements Closeable {
 			return true;
 		} catch (TimeoutException tie) {
 			//Nothing
+		}
+		myLogger.debug("Profile account link not here");
+		myLogger.debug("End loginMoneyTabWeb");
+		return false;
+	}
+	
+	private boolean checkIfPageURLMatched(String targetURL) {
+		myLogger.debug("Start checkIfPageURLMatched");
+		try {
+			return new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(ExpectedConditions.urlToBe(targetURL));
+		} catch (TimeoutException tie) {
+			//Nothing
+		} finally {
+			myLogger.debug("End checkIfPageURLMatched");
 		}
 		return false;
 	}

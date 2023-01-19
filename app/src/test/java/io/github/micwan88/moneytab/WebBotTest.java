@@ -49,6 +49,8 @@ class WebBotTest {
     @Test void webBotTest() {
     	String username = webBot.getLogin();
     	String password = webBot.getPassword();
-        assertFalse(webBot.loginMoneyTabWeb(username, password), "loginMoneyTabWeb");
+    	
+    	boolean logonResult = webBot.loginMoneyTabWeb(username, password);
+        assertFalse(logonResult, "loginMoneyTabWeb");
     }
 }
