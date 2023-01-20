@@ -29,13 +29,12 @@ public class WebBot implements Closeable {
 	private ChromeDriverService chromeDriverService = null;
 	private WebDriver webDriver = null;
 	
+	//App Parameters
 	private boolean browserHeadlessMode = false;
 	private boolean browserDetachMode = false;
 	private File browserUserData = null;
-	
 	private long waitTimeout = 5000L;
 	private long sleepTime = 10000L;
-	
 	private String login = "";
 	private String password = "";
 	
@@ -95,6 +94,17 @@ public class WebBot implements Closeable {
 		}
 		
 		tempStr = appProperties.getProperty("moneytab.bot.password");
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			password = tempStr.trim();
+		}
+		
+		//System properties "-D" value will override the app.properties
+		tempStr = System.getProperty("moneytab.bot.login");
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			login = tempStr.trim();
+		}
+		
+		tempStr = System.getProperty("moneytab.bot.password");
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			password = tempStr.trim();
 		}
@@ -296,6 +306,54 @@ public class WebBot implements Closeable {
 			myLogger.debug("End checkIfPageURLMatched");
 		}
 		return false;
+	}
+
+	public boolean isBrowserHeadlessMode() {
+		return browserHeadlessMode;
+	}
+
+	public void setBrowserHeadlessMode(boolean browserHeadlessMode) {
+		this.browserHeadlessMode = browserHeadlessMode;
+	}
+
+	public boolean isBrowserDetachMode() {
+		return browserDetachMode;
+	}
+
+	public void setBrowserDetachMode(boolean browserDetachMode) {
+		this.browserDetachMode = browserDetachMode;
+	}
+
+	public File getBrowserUserData() {
+		return browserUserData;
+	}
+
+	public void setBrowserUserData(File browserUserData) {
+		this.browserUserData = browserUserData;
+	}
+
+	public long getWaitTimeout() {
+		return waitTimeout;
+	}
+
+	public void setWaitTimeout(long waitTimeout) {
+		this.waitTimeout = waitTimeout;
+	}
+
+	public long getSleepTime() {
+		return sleepTime;
+	}
+
+	public void setSleepTime(long sleepTime) {
+		this.sleepTime = sleepTime;
+	}
+
+	public void setLogin(String login) {
+		this.login = login;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
 	}
 
 	public String getLogin() {
