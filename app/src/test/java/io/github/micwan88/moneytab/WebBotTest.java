@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
+import io.github.micwan88.moneytab.bean.NotificationItem;
+
 @TestInstance(Lifecycle.PER_CLASS)
 class WebBotTest {
 	WebBot webBot = new WebBot();
@@ -94,7 +96,7 @@ class WebBotTest {
     	boolean logonResult = webBot.loginMoneyTabWeb(username, password);
         assertTrue(logonResult, "extractNotificationTest - logon");
         
-        List<String> notificationList = webBot.extractNotificationList();
-        assertNotNull(notificationList, "extractNotificationTest - notificationList");
+        List<NotificationItem> notificationItemList = webBot.extractNotificationList();
+        assertNotNull(notificationItemList, "extractNotificationTest - notificationItemList");
     }
 }

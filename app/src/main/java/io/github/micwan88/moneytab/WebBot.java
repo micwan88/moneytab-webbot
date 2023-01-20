@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -21,6 +22,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import io.github.micwan88.helperclass4j.AppPropertiesUtil;
+import io.github.micwan88.moneytab.bean.NotificationItem;
 
 public class WebBot implements Closeable {
 	
@@ -37,6 +39,10 @@ public class WebBot implements Closeable {
 	private long sleepTime = 10000L;
 	private String login = "";
 	private String password = "";
+	
+	private String notificationTypeFilterStr = null;
+	private String notificationDateFilterStr = null;
+	private String notificationTitleFilterStr = null;
 	
 	private long parseLong(String arg) {
 		try {
@@ -299,7 +305,7 @@ public class WebBot implements Closeable {
 		return false;
 	}
 	
-	public List<String> extractNotificationList() {
+	public List<NotificationItem> extractNotificationList() {
 		myLogger.debug("Start extractNotificationList");
 		
 		String targetURL = "https://www.money-tab.com/profile/notification";
@@ -323,31 +329,45 @@ public class WebBot implements Closeable {
 			
 			myLogger.debug("notificationDiv found, try get list of notification items ...");
 			
-			List<WebElement> notificationItemList = notificationDiv.findElements(By.cssSelector("div[class^='notice_item']"));
+			List<WebElement> notificationItemElementList = notificationDiv.findElements(By.cssSelector("div[class^='notice_item']"));
 			
-			myLogger.debug("notificationItemList.size : {}", notificationItemList.size());
+			myLogger.debug("notificationItemElementList.size : {}", notificationItemElementList.size());
 			
 			WebElement notificationTypeElement = null;
 			WebElement notificationLinkElement = null;
 			WebElement notificationDateElement = null;
 			WebElement notificationTitleElement = null;
-			for (WebElement notificationItem : notificationItemList) {
-				myLogger.debug(notificationItem.getText());
-				
-				notificationTypeElement = notificationItem.findElement(By.cssSelector("div > span + span"));
+			WebElement notificationNoLinkDivElement = null;
+			NotificationItem notificationItem = null;
+			ArrayList<NotificationItem> notificationItemList = new ArrayList<>();
+			for (WebElement notificationItemElement : notificationItemElementList) {
+				notificationItem = new NotificationItem();
+				notificationTypeElement = notificationItemElement.findElement(By.cssSelector("div > span + span"));
 				if (notificationTypeElement.getText().trim().equals(WebBotConst.NOTIFICATION_TYPE_NEW_VIDEO)) {
-					notificationLinkElement = notificationItem.findElement(By.cssSelector("div + div > a.block"));
+					notificationLinkElement = notificationItemElement.findElement(By.cssSelector("div + div > a.block[href]"));
 					notificationDateElement = notificationLinkElement.findElement(By.cssSelector("div > span"));
 					notificationTitleElement = notificationLinkElement.findElement(By.cssSelector("div:has(span) + p"));
+					
+					notificationItem.setType(notificationTypeElement.getText().trim());
+					notificationItem.setDateInString(notificationDateElement.getText().trim());
+					notificationItem.setTitle(notificationTitleElement.getText().trim());
+					notificationItem.setFullDescription(notificationLinkElement.getText().trim());
+					notificationItem.setPageLink(notificationLinkElement.getAttribute("href").trim());
 				} else {
 					//No link if just news notification
-					notificationDateElement = notificationItem.findElement(By.cssSelector("div + div > div > span"));
-					notificationTitleElement = notificationItem.findElement(By.cssSelector("div + div > div:has(span) + p"));
+					notificationNoLinkDivElement = notificationItemElement.findElement(By.cssSelector("div + div"));
+					notificationDateElement = notificationNoLinkDivElement.findElement(By.cssSelector("div > span"));
+					notificationTitleElement = notificationNoLinkDivElement.findElement(By.cssSelector("div:has(span) + p"));
+					
+					notificationItem.setType(notificationTypeElement.getText().trim());
+					notificationItem.setDateInString(notificationDateElement.getText().trim());
+					notificationItem.setTitle(notificationTitleElement.getText().trim());
+					notificationItem.setFullDescription(notificationNoLinkDivElement.getText().trim());
 				}
-				
+				notificationItemList.add(notificationItem);
+				myLogger.debug(notificationItem);
 			}
-			
-			
+			return notificationItemList;
 		} catch (NoSuchElementException e) {
 			myLogger.error("Cannot find related element in : " + webDriver.getTitle(), e);
 		} catch (Exception e) {
