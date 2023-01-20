@@ -327,9 +327,23 @@ public class WebBot implements Closeable {
 			
 			myLogger.debug("notificationItemList.size : {}", notificationItemList.size());
 			
+			WebElement notificationTypeElement = null;
+			WebElement notificationLinkElement = null;
+			WebElement notificationDateElement = null;
+			WebElement notificationTitleElement = null;
 			for (WebElement notificationItem : notificationItemList) {
 				myLogger.debug(notificationItem.getText());
 				
+				notificationTypeElement = notificationItem.findElement(By.cssSelector("div > span + span"));
+				if (notificationTypeElement.getText().trim().equals(WebBotConst.NOTIFICATION_TYPE_NEW_VIDEO)) {
+					notificationLinkElement = notificationItem.findElement(By.cssSelector("div + div > a.block"));
+					notificationDateElement = notificationLinkElement.findElement(By.cssSelector("div > span"));
+					notificationTitleElement = notificationLinkElement.findElement(By.cssSelector("div:has(span) + p"));
+				} else {
+					//No link if just news notification
+					notificationDateElement = notificationItem.findElement(By.cssSelector("div + div > div > span"));
+					notificationTitleElement = notificationItem.findElement(By.cssSelector("div + div > div:has(span) + p"));
+				}
 				
 			}
 			
