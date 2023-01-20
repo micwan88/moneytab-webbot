@@ -98,7 +98,50 @@ public class WebBot implements Closeable {
 			password = tempStr.trim();
 		}
 		
-		//System properties "-D" value will override the app.properties
+		/**
+		 * System properties "-D" value will override the app.properties
+		 */
+		
+		tempStr = System.getProperty("moneytab.bot.browserHeadlessMode");
+		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
+			browserHeadlessMode = true;
+		}
+		
+		tempStr = System.getProperty("moneytab.bot.browserDetachMode");
+		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
+			browserDetachMode = true;
+		}
+		
+		tempStr = System.getProperty("moneytab.bot.browserUserData");
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			browserUserData = new File(tempStr);
+			
+			if (!browserUserData.isDirectory() || !browserUserData.exists()) {
+				myLogger.error("Browser user data not exist {}: {}", "moneytab.bot.browserUserData", browserUserData.getAbsolutePath());
+				return -1;
+			}
+		}
+		
+		tempStr = System.getProperty("moneytab.bot.browserWaitTimeout");
+		if (tempStr != null && !tempStr.trim().isEmpty()) {
+			waitTimeout = parseLong(tempStr);
+			
+			if (waitTimeout == 0L) {
+				myLogger.error("Invalid moneytab.bot.browserWaitTimeout: {}", tempStr);
+				return -1;
+			}
+		}
+		
+		tempStr = System.getProperty("moneytab.bot.sleepTime");
+		if (tempStr != null && !tempStr.trim().isEmpty()) {
+			sleepTime = parseLong(tempStr);
+			
+			if (sleepTime == 0L) {
+				myLogger.error("Invalid moneytab.bot.sleepTime: {}", tempStr);
+				return -1;
+			}
+		}
+		
 		tempStr = System.getProperty("moneytab.bot.login");
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			login = tempStr.trim();
@@ -265,10 +308,34 @@ public class WebBot implements Closeable {
 		try {
 			webDriver.get(targetURL);
 			
-			if (checkIfPageURLMatched(targetURL)) {
+			myLogger.debug("Check if the page would be redriect due to unauthorize or something ...");
+			
+			if (!checkIfPageURLMatched(targetURL)) {
 				myLogger.error("Notification page has been redirect to : {}", webDriver.getCurrentUrl());
 				return null;
 			}
+			
+			myLogger.debug("Finding notification div container");
+			
+			//Need time to load, so need wait
+			WebElement notificationDiv = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(driver -> driver.findElement(By.cssSelector("section > div > div > p + div")));
+			
+			myLogger.debug("notificationDiv found, try get list of notification items ...");
+			
+			List<WebElement> notificationItemList = notificationDiv.findElements(By.cssSelector("div[class^='notice_item']"));
+			
+			myLogger.debug("notificationItemList.size : {}", notificationItemList.size());
+			
+			for (WebElement notificationItem : notificationItemList) {
+				myLogger.debug(notificationItem.getText());
+				
+				
+			}
+			
+			
+		} catch (NoSuchElementException e) {
+			myLogger.error("Cannot find related element in : " + webDriver.getTitle(), e);
 		} catch (Exception e) {
 			myLogger.error("Unexpected error", e);
 		} finally {

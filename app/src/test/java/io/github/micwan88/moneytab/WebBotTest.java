@@ -2,11 +2,13 @@ package io.github.micwan88.moneytab;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
 
 import org.junit.jupiter.api.AfterAll;
@@ -30,7 +32,11 @@ class WebBotTest {
 		//Fake username and password
 		appProperties.put("moneytab.bot.login", "aaaa");
 		appProperties.put("moneytab.bot.password", "bbbb");
-		//Don't set userdata directory as don't want browser retain the last logon stage for test
+		
+		/**
+		 * Don't set userdata directory as don't want browser retain the last logon stage for test
+		 * But if intend to retain browser state, then can specify in system properties to override the setting
+		 */
 		//appProperties.put("moneytab.bot.browserUserData", "userdata");
 		
 		webBot.loadAppParameters(appProperties);
@@ -77,5 +83,18 @@ class WebBotTest {
     	
     	boolean logonResult = webBot.loginMoneyTabWeb(username, password);
         assertTrue(logonResult, "loginMoneyTabWeb");
+    }
+    
+    @Test void extractNotificationTest() {
+    	assumeTrue(gotRealCredentials);
+    	
+    	//Need logon success 
+    	String username = webBot.getLogin();
+    	String password = webBot.getPassword();
+    	boolean logonResult = webBot.loginMoneyTabWeb(username, password);
+        assertTrue(logonResult, "extractNotificationTest - logon");
+        
+        List<String> notificationList = webBot.extractNotificationList();
+        assertNotNull(notificationList, "extractNotificationTest - notificationList");
     }
 }
