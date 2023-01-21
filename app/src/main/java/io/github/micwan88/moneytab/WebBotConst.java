@@ -18,4 +18,6 @@ public class WebBotConst {
 	
 	public static final String APP_PROPERTIES_TG_BOT_TOKEN = "moneytab.bot.tgBotToken";
 	public static final String APP_PROPERTIES_TG_BOT_CHATID = "moneytab.bot.tgBotChatID";
+	
+	public static final String NOTIFICATION_DATE_FORMAT_PATTERN = "dd.MM.yyyy";
 }

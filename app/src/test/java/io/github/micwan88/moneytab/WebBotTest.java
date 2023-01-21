@@ -36,7 +36,7 @@ class WebBotTest {
 		appProperties.put(WebBotConst.APP_PROPERTIES_PASSWORD, "bbbb");
 		
 		appProperties.put(WebBotConst.APP_PROPERTIES_NOTIFY_DATE_FILTER, "TODAY");
-		appProperties.put(WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER, "^90後零至千萬的故事,我要做磚家,我要炒股票,贏在美股系列,我要做屋主");
+		appProperties.put(WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER, "^90後零至千萬的故事,我要做磚家,我要炒股票,贏在美股系列,我要做屋主,施家Vlog");
 		
 		/**
 		 * Don't set userdata directory as don't want browser retain the last logon stage for test
@@ -99,7 +99,16 @@ class WebBotTest {
     	boolean logonResult = webBot.loginMoneyTabWeb(username, password);
         assertTrue(logonResult, "extractNotificationTest - logon");
         
-        List<NotificationItem> notificationItemList = webBot.extractNotificationList();
-        assertNotNull(notificationItemList, "extractNotificationTest - notificationItemList");
+        String dateFilterStr = webBot.getNotifyDateFilterStr();
+        String titleFilterStr = webBot.getNotifyTitleFilterStr();
+        
+        List<NotificationItem> notificationItemList = webBot.extractNotificationList(null, null);
+        assertNotNull(notificationItemList, "extractNotificationTest - notificationItemList not null");
+        
+        int fullListCount = notificationItemList.size();
+        assertTrue(fullListCount > 0, "extractNotificationTest - notificationItemList.size > 0");
+        
+        notificationItemList = webBot.extractNotificationList(dateFilterStr, titleFilterStr);
+        assertTrue(fullListCount >= notificationItemList.size(), "extractNotificationTest - filter work");
     }
 }

@@ -3,8 +3,10 @@ package io.github.micwan88.moneytab;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -23,6 +25,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import io.github.micwan88.helperclass4j.AppPropertiesUtil;
 import io.github.micwan88.moneytab.bean.NotificationItem;
+import io.github.micwan88.moneytab.data.NotificationFilter;
 
 public class WebBot implements Closeable {
 	
@@ -351,7 +354,7 @@ public class WebBot implements Closeable {
 		return false;
 	}
 	
-	public List<NotificationItem> extractNotificationList() {
+	public List<NotificationItem> extractNotificationList(String dateFilterStr, String titleFilterStr) {
 		myLogger.debug("Start extractNotificationList");
 		
 		String targetURL = "https://www.money-tab.com/profile/notification";
@@ -379,6 +382,8 @@ public class WebBot implements Closeable {
 			
 			myLogger.debug("notificationItemElementList.size : {}", notificationItemElementList.size());
 			
+			NotificationFilter dateFilter = null;
+			NotificationFilter titleFilter = null;
 			WebElement notificationTypeElement = null;
 			WebElement notificationLinkElement = null;
 			WebElement notificationDateElement = null;
@@ -386,6 +391,16 @@ public class WebBot implements Closeable {
 			WebElement notificationNoLinkDivElement = null;
 			NotificationItem notificationItem = null;
 			ArrayList<NotificationItem> notificationItemList = new ArrayList<>();
+			SimpleDateFormat dateFormat = new SimpleDateFormat(WebBotConst.NOTIFICATION_DATE_FORMAT_PATTERN);
+			
+			if (dateFilterStr != null && !dateFilterStr.trim().isEmpty()) {
+				dateFilter = new NotificationFilter(dateFilterStr.replaceAll("TODAY", dateFormat.format(new Date())));
+			}
+			
+			if (titleFilterStr != null && !titleFilterStr.trim().isEmpty()) {
+				titleFilter = new NotificationFilter(titleFilterStr);
+			}
+			
 			for (WebElement notificationItemElement : notificationItemElementList) {
 				notificationItem = new NotificationItem();
 				notificationTypeElement = notificationItemElement.findElement(By.cssSelector("div > span + span"));
@@ -410,9 +425,27 @@ public class WebBot implements Closeable {
 					notificationItem.setTitle(notificationTitleElement.getText().trim());
 					notificationItem.setFullDescription(notificationNoLinkDivElement.getText().trim());
 				}
+				
+				
+				
+				if (dateFilter != null && !dateFilter.filterDate(notificationItem)) {
+					myLogger.debug("Filtered by date: {}", notificationItem);
+					continue;
+				}
+				
+				//Title filter only apply for new video
+				if (notificationItem.getType().equals(WebBotConst.NOTIFICATION_TYPE_NEW_VIDEO)) {
+					if (titleFilter != null && !titleFilter.filterTitle(notificationItem)) {
+						myLogger.debug("Filtered by title: {}", notificationItem);
+						continue;
+					}
+				}
+				
 				notificationItemList.add(notificationItem);
-				myLogger.debug(notificationItem);
+				myLogger.debug("Add to list : {}", notificationItem);
 			}
+			
+			myLogger.debug("Output notificationItemList.size : {}", notificationItemList.size());
 			return notificationItemList;
 		} catch (NoSuchElementException e) {
 			myLogger.error("Cannot find related element in : " + webDriver.getTitle(), e);
