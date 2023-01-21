@@ -27,19 +27,22 @@ class WebBotTest {
 	@BeforeAll void beforeTest() throws IOException {
 		//Hard code test properties
 		Properties appProperties = new Properties();
-		appProperties.put("moneytab.bot.browserHeadlessMode", "false");
-		appProperties.put("moneytab.bot.browserDetachMode", "false");
-		appProperties.put("moneytab.bot.browserWaitTimeout", "8000");
-		appProperties.put("moneytab.bot.sleepTime", "10000");
+		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE, "false");
+		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_DETACH_MODE, "false");
+		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, "8000");
+		appProperties.put(WebBotConst.APP_PROPERTIES_SLEEP_TIME, "10000");
 		//Fake username and password
-		appProperties.put("moneytab.bot.login", "aaaa");
-		appProperties.put("moneytab.bot.password", "bbbb");
+		appProperties.put(WebBotConst.APP_PROPERTIES_LOGIN, "aaaa");
+		appProperties.put(WebBotConst.APP_PROPERTIES_PASSWORD, "bbbb");
+		
+		appProperties.put(WebBotConst.APP_PROPERTIES_NOTIFY_DATE_FILTER, "TODAY");
+		appProperties.put(WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER, "^90後零至千萬的故事,我要做磚家,我要炒股票,贏在美股系列,我要做屋主");
 		
 		/**
 		 * Don't set userdata directory as don't want browser retain the last logon stage for test
 		 * But if intend to retain browser state, then can specify in system properties to override the setting
 		 */
-		//appProperties.put("moneytab.bot.browserUserData", "userdata");
+		//appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, "userdata");
 		
 		webBot.loadAppParameters(appProperties);
 		
@@ -47,8 +50,8 @@ class WebBotTest {
 		
 		webBot.init();
 		
-		String realUsername = System.getProperty("moneytab.bot.login");
-		String realPassword = System.getProperty("moneytab.bot.password");
+		String realUsername = System.getProperty(WebBotConst.APP_PROPERTIES_LOGIN);
+		String realPassword = System.getProperty(WebBotConst.APP_PROPERTIES_PASSWORD);
 		if (realUsername != null && !realUsername.trim().isEmpty() 
 				&& realPassword != null && !realPassword.trim().isEmpty()) {
 			gotRealCredentials = true;

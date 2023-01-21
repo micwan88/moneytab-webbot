@@ -39,10 +39,11 @@ public class WebBot implements Closeable {
 	private long sleepTime = 10000L;
 	private String login = "";
 	private String password = "";
+	private String tgBotToken = null;
+	private String tgBotChatID = null;
 	
-	private String notificationTypeFilterStr = null;
-	private String notificationDateFilterStr = null;
-	private String notificationTitleFilterStr = null;
+	private String notifyDateFilterStr = null;
+	private String notifyTitleFilterStr = null;
 	
 	private long parseLong(String arg) {
 		try {
@@ -54,108 +55,148 @@ public class WebBot implements Closeable {
 	}
 	
 	public int loadAppParameters(Properties appProperties) {
-		String tempStr = appProperties.getProperty("moneytab.bot.browserHeadlessMode");
+		String tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE);
 		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
 			browserHeadlessMode = true;
 		}
 		
-		tempStr = appProperties.getProperty("moneytab.bot.browserDetachMode");
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_DETACH_MODE);
 		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
 			browserDetachMode = true;
 		}
 		
-		tempStr = appProperties.getProperty("moneytab.bot.browserUserData");
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_USERDATA);
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			browserUserData = new File(tempStr);
 			
 			if (!browserUserData.isDirectory() || !browserUserData.exists()) {
-				myLogger.error("Browser user data not exist {}: {}", "moneytab.bot.browserUserData", browserUserData.getAbsolutePath());
+				myLogger.error("Browser user data not exist {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, browserUserData.getAbsolutePath());
 				return -1;
 			}
 		}
 		
-		tempStr = appProperties.getProperty("moneytab.bot.browserWaitTimeout");
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT);
 		if (tempStr != null && !tempStr.trim().isEmpty()) {
 			waitTimeout = parseLong(tempStr);
 			
 			if (waitTimeout == 0L) {
-				myLogger.error("Invalid moneytab.bot.browserWaitTimeout: {}", tempStr);
+				myLogger.error("Invalid {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, tempStr);
 				return -1;
 			}
 		}
 		
-		tempStr = appProperties.getProperty("moneytab.bot.sleepTime");
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_SLEEP_TIME);
 		if (tempStr != null && !tempStr.trim().isEmpty()) {
 			sleepTime = parseLong(tempStr);
 			
 			if (sleepTime == 0L) {
-				myLogger.error("Invalid moneytab.bot.sleepTime: {}", tempStr);
+				myLogger.error("Invalid {}: {}", WebBotConst.APP_PROPERTIES_SLEEP_TIME, tempStr);
 				return -1;
 			}
 		}
 		
-		tempStr = appProperties.getProperty("moneytab.bot.login");
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_LOGIN);
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			login = tempStr.trim();
 		}
 		
-		tempStr = appProperties.getProperty("moneytab.bot.password");
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_PASSWORD);
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			password = tempStr.trim();
+		}
+		
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_NOTIFY_DATE_FILTER);
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			notifyDateFilterStr = tempStr.trim();
+		}
+		
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER);
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			notifyTitleFilterStr = tempStr.trim();
+		}
+		
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_TG_BOT_TOKEN);
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			tgBotToken = tempStr.trim();
+		}
+		
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_TG_BOT_CHATID);
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			tgBotChatID = tempStr.trim();
 		}
 		
 		/**
 		 * System properties "-D" value will override the app.properties
 		 */
 		
-		tempStr = System.getProperty("moneytab.bot.browserHeadlessMode");
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE);
 		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
 			browserHeadlessMode = true;
 		}
 		
-		tempStr = System.getProperty("moneytab.bot.browserDetachMode");
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_DETACH_MODE);
 		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
 			browserDetachMode = true;
 		}
 		
-		tempStr = System.getProperty("moneytab.bot.browserUserData");
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_USERDATA);
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			browserUserData = new File(tempStr);
 			
 			if (!browserUserData.isDirectory() || !browserUserData.exists()) {
-				myLogger.error("Browser user data not exist {}: {}", "moneytab.bot.browserUserData", browserUserData.getAbsolutePath());
+				myLogger.error("Browser user data not exist {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, browserUserData.getAbsolutePath());
 				return -1;
 			}
 		}
 		
-		tempStr = System.getProperty("moneytab.bot.browserWaitTimeout");
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT);
 		if (tempStr != null && !tempStr.trim().isEmpty()) {
 			waitTimeout = parseLong(tempStr);
 			
 			if (waitTimeout == 0L) {
-				myLogger.error("Invalid moneytab.bot.browserWaitTimeout: {}", tempStr);
+				myLogger.error("Invalid {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, tempStr);
 				return -1;
 			}
 		}
 		
-		tempStr = System.getProperty("moneytab.bot.sleepTime");
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_SLEEP_TIME);
 		if (tempStr != null && !tempStr.trim().isEmpty()) {
 			sleepTime = parseLong(tempStr);
 			
 			if (sleepTime == 0L) {
-				myLogger.error("Invalid moneytab.bot.sleepTime: {}", tempStr);
+				myLogger.error("Invalid {}: {}", WebBotConst.APP_PROPERTIES_SLEEP_TIME, tempStr);
 				return -1;
 			}
 		}
 		
-		tempStr = System.getProperty("moneytab.bot.login");
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_LOGIN);
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			login = tempStr.trim();
 		}
 		
-		tempStr = System.getProperty("moneytab.bot.password");
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_PASSWORD);
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			password = tempStr.trim();
+		}
+		
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_NOTIFY_DATE_FILTER);
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			notifyDateFilterStr = tempStr.trim();
+		}
+		
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER);
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			notifyTitleFilterStr = tempStr.trim();
+		}
+		
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_TG_BOT_TOKEN);
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			tgBotToken = tempStr.trim();
+		}
+		
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_TG_BOT_CHATID);
+		if (tempStr != null && !tempStr.trim().equals("")) {
+			tgBotChatID = tempStr.trim();
 		}
 		
 		return 0;
@@ -163,13 +204,18 @@ public class WebBot implements Closeable {
 	
 	public void debugParams() {
 		myLogger.debug("Debug Params ...");
-		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserHeadlessMode", browserHeadlessMode);
-		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserDetachMode", browserDetachMode);
-		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserUserData", browserUserData != null ? browserUserData.getAbsolutePath() : null);
-		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.browserWaitTimeout", waitTimeout);
-		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.sleepTime", sleepTime);
-		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.login", login);
-		myLogger.debug("AppProp - {}: {}" , "moneytab.bot.password", password);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE, browserHeadlessMode);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_DETACH_MODE, browserDetachMode);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, browserUserData != null ? browserUserData.getAbsolutePath() : null);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, waitTimeout);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_SLEEP_TIME, sleepTime);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_LOGIN, login);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_PASSWORD, password);
+		
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_NOTIFY_DATE_FILTER, notifyDateFilterStr);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER, notifyTitleFilterStr);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_TG_BOT_TOKEN, tgBotToken);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_TG_BOT_CHATID, tgBotChatID);
 	}
 	
 	public static void main(String[] args) {
@@ -463,5 +509,37 @@ public class WebBot implements Closeable {
 
 	public String getPassword() {
 		return password;
+	}
+
+	public String getNotifyDateFilterStr() {
+		return notifyDateFilterStr;
+	}
+
+	public void setNotifyDateFilterStr(String notifyDateFilterStr) {
+		this.notifyDateFilterStr = notifyDateFilterStr;
+	}
+
+	public String getNotifyTitleFilterStr() {
+		return notifyTitleFilterStr;
+	}
+
+	public void setNotifyTitleFilterStr(String notifyTitleFilterStr) {
+		this.notifyTitleFilterStr = notifyTitleFilterStr;
+	}
+
+	public String getTgBotToken() {
+		return tgBotToken;
+	}
+
+	public void setTgBotToken(String tgBotToken) {
+		this.tgBotToken = tgBotToken;
+	}
+
+	public String getTgBotChatID() {
+		return tgBotChatID;
+	}
+
+	public void setTgBotChatID(String tgBotChatID) {
+		this.tgBotChatID = tgBotChatID;
 	}
 }
