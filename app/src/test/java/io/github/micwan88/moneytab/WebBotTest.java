@@ -1,5 +1,6 @@
 package io.github.micwan88.moneytab;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -8,6 +9,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -111,5 +113,29 @@ class WebBotTest {
         
         notificationItemList = webBot.extractNotificationList(dateFilter, titleFilter);
         assertTrue(fullListCount >= notificationItemList.size(), "extractNotificationTest - filter work");
+    }
+    
+    @Test void populateYoutubeLinkTest() {
+    	assumeTrue(gotRealCredentials);
+    	
+    	//Need logon success 
+    	String username = webBot.getLogin();
+    	String password = webBot.getPassword();
+    	boolean logonResult = webBot.loginMoneyTabWeb(username, password);
+        assertTrue(logonResult, "populateYoutubeLinkTest - logon");
+        
+    	//90後零至千萬的故事 - 20.01.2023
+    	String targetPageLink = "https://www.money-tab.com/channel/90s-ten-million-story/6124";
+    	NotificationItem notificationItem = new NotificationItem(WebBotConst.NOTIFICATION_TYPE_IMPORTANT_NEWS, "", "", "", targetPageLink, null);
+    	ArrayList<NotificationItem> notificationItemList = new ArrayList<>();
+    	notificationItemList.add(notificationItem);
+    	
+    	//3pm施傅升級版 - 20.01.2023
+    	targetPageLink = "https://www.money-tab.com/channel/3pm-premium/6115";
+    	notificationItem = new NotificationItem(WebBotConst.NOTIFICATION_TYPE_IMPORTANT_NEWS, "", "", "", targetPageLink, null);
+    	notificationItemList.add(notificationItem);
+    	
+    	int returnCode = webBot.populateYoutubeLink(notificationItemList);
+    	assertEquals(returnCode, 0, "populateYoutubeLinkTest");
     }
 }

@@ -1,5 +1,6 @@
 package io.github.micwan88.moneytab;
 
+import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
@@ -77,14 +79,32 @@ public class WebBot implements Closeable {
 				myLogger.error("Cannot read checksum history file: {}", checksumHistoryPath.toAbsolutePath(), e);
 			}
 		} else
-			myLogger.warn("checksumHistory cannot be read : {}", checksumHistoryPath.toAbsolutePath());
+			myLogger.warn("checksumHistory does not exist or it cannot be read : {}", checksumHistoryPath.toAbsolutePath());
 		myLogger.debug("End readChecksumHistory");
 	}
 	
-	public void saveChecksumHistory(Path checksumHistoryPath, List<NotificationItem> notificationItem) {
+	public int saveChecksumHistory(Path checksumHistoryPath, List<NotificationItem> notificationItemList) {
 		myLogger.debug("Start saveChecksumHistory");
-		
-		myLogger.debug("End saveChecksumHistory");
+		try (final BufferedWriter bw = Files.newBufferedWriter(checksumHistoryPath, Charset.forName("UTF-8"))) {
+			boolean isFirstItem = true;
+			int count = 0;
+			for (NotificationItem notificationItem : notificationItemList) {
+				if (!isFirstItem) {
+					bw.newLine();
+					isFirstItem = false;
+				}
+				bw.write(notificationItem.getFullDescriptionChecksum());
+				count++;
+			}
+			
+			myLogger.debug("Checksum history saved with count : {}", count);
+			return 0;
+		} catch (IOException e) {
+			myLogger.error("Cannot save checksum history : {}", checksumHistoryPath.toAbsolutePath(), e);
+		} finally {
+			myLogger.debug("End saveChecksumHistory");
+		}
+		return -1;
 	}
 	
 	public int loadAppParameters(Properties appProperties) {
@@ -280,8 +300,20 @@ public class WebBot implements Closeable {
 			
 			//If logon success
 			if (result) {
+				List<NotificationItem> notificationItemList = webBot.extractNotificationList(webBot.getDateFilter(), webBot.getTitleFilter());
 				
-				List<NotificationItem> notificationItem = webBot.extractNotificationList(webBot.getDateFilter(), webBot.getTitleFilter());
+				if (notificationItemList != null) {
+					//Filter by checksum
+					List<NotificationItem> outNotificationItems = notificationItemList.stream().filter((notificationItem) -> webBot.getChecksumFilter().filterChecksum(notificationItem)).collect(Collectors.toList());
+					
+					//Extract youtube link
+					returnCode = webBot.populateYoutubeLink(outNotificationItems);
+					
+					if (returnCode == 0) {
+						//Save the checksum for next run to prevent duplicate sending
+						returnCode = webBot.saveChecksumHistory(webBot.getChecksumHistoryPath(), notificationItemList);
+					}
+				}
 			}
 		} catch (IOException e) {
 			myLogger.error("Chromedriver init error", e);
@@ -484,6 +516,85 @@ public class WebBot implements Closeable {
 		} finally {
 			myLogger.debug("End extractNotificationList");
 		}
+		return null;
+	}
+	
+	public int populateYoutubeLink(List<NotificationItem> notificationItemList) {
+		myLogger.debug("Start populateYoutubeLink");
+		
+		try {
+			if (!checkIfAlreadyLogon())
+				return -1;
+			
+			for (NotificationItem notificationItem : notificationItemList) {
+				//Skip if non video item
+				if (notificationItem.getPageLink() == null)
+					continue;
+				
+				String targetURL = notificationItem.getPageLink();
+				myLogger.debug("Target URL: {}", targetURL);
+				
+				webDriver.get(targetURL);
+				
+				//Need time to load, so need wait
+				WebElement iFrameElement = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+						.until(driver -> driver.findElement(By.cssSelector("main > section > div + div iframe")));
+				
+				myLogger.debug("iFrameElement found : {} - src {}", iFrameElement.getAccessibleName(), iFrameElement.getAttribute("src"));
+				
+				myLogger.debug("Switch to iFrameElement ...");
+				webDriver.switchTo().frame(iFrameElement);
+				
+				String youTubeLink = tryExtractYoutubeLink();
+				
+				if (youTubeLink == null) {
+					//Find any nested iframe
+					iFrameElement = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+							.until(driver -> driver.findElement(By.cssSelector("iframe")));
+					
+					myLogger.debug("iFrameElement found : {} - src {}", iFrameElement.getAccessibleName(), iFrameElement.getAttribute("src"));
+					
+					myLogger.debug("Switch to iFrameElement ...");
+					webDriver.switchTo().frame(iFrameElement);
+					
+					youTubeLink = tryExtractYoutubeLink();
+					if (youTubeLink == null) {
+						myLogger.error("Still cannot find the youtube link item from : {}", notificationItem);
+						return -2;
+					}
+				}
+				
+				notificationItem.setVideoLink(youTubeLink);
+			}
+			
+			return 0;
+		} catch (NoSuchElementException e) {
+			myLogger.error("Cannot find related element in : " + webDriver.getTitle(), e);
+		} catch (Exception e) {
+			myLogger.error("Unexpected error", e);
+		} finally {
+			myLogger.debug("End populateYoutubeLink");
+		}
+		return -3;
+	}
+	
+	private String tryExtractYoutubeLink() {
+		myLogger.debug("Start tryExtractYoutubeLink");
+		try {
+			myLogger.debug("Try to extract any youtube link ...");
+			
+			//Need time to load, so need wait
+			WebElement linkElement = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(driver -> driver.findElement(By.cssSelector("link[rel='canonical']")));
+			
+			String youtubeLink = linkElement.getAttribute("href");
+			myLogger.debug("Youtube link found : {}", youtubeLink);
+			return youtubeLink;
+		} catch (TimeoutException tie) {
+			//Nothing
+		}
+		myLogger.debug("Youtube link not found");
+		myLogger.debug("End tryExtractYoutubeLink");
 		return null;
 	}
 	
