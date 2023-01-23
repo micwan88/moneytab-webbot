@@ -40,7 +40,7 @@ public class TelegramBot {
 	public int postNotifications(String notificationMsg, String tgBotChatIDs) {
 		String apiURL = URL_TELEGRAM_BOT_BASE + tgBotToken + URL_TELEGRAM_BOT_SENDMSG_CMD;
 		
-		String postMsg = convertLinefeedHTML(filterTgRestrictedKeywords(notificationMsg));
+		String postMsg = filterTgRestrictedKeywords(notificationMsg);
 		if (postMsg.length() > TELEGRAM_BOT_SENDMSG_MAXLENGTH)
 			postMsg = notificationMsg.substring(0, TELEGRAM_BOT_SENDMSG_MAXLENGTH);
 		
@@ -79,9 +79,5 @@ public class TelegramBot {
 	
 	private String filterTgRestrictedKeywords(String sourceString) {
 		return sourceString.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-	}
-	
-	private String convertLinefeedHTML(String sourceString) {
-		return sourceString.replaceAll("\n", "<br/>");
 	}
 }

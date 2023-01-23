@@ -305,7 +305,14 @@ public class WebBot implements Closeable {
 				
 				if (notificationItemList != null) {
 					//Filter by checksum
-					List<NotificationItem> outNotificationItems = notificationItemList.stream().filter((notificationItem) -> webBot.getChecksumFilter().filterChecksum(notificationItem)).collect(Collectors.toList());
+					List<NotificationItem> outNotificationItems = notificationItemList.stream().filter((notificationItem) -> {
+						if (webBot.getChecksumFilter() == null)
+							return true;
+						else
+							return webBot.getChecksumFilter().filterChecksum(notificationItem);
+					}).collect(Collectors.toList());
+					
+					myLogger.debug("Filtered by checksum outNotificationItems.size : {}", outNotificationItems.size());
 					
 					//Extract youtube link
 					returnCode = webBot.populateYoutubeLink(outNotificationItems);
@@ -604,7 +611,7 @@ public class WebBot implements Closeable {
 		outMsg.append(notificationItem.getFullDescription());
 		
 		if (notificationItem.getVideoLink() != null) {
-			outMsg.append("\n");
+			outMsg.append("\n\n");
 			outMsg.append(notificationItem.getVideoLink());
 		}
 		
