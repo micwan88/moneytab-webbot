@@ -33,6 +33,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import io.github.micwan88.helperclass4j.AppPropertiesUtil;
 import io.github.micwan88.moneytab.bean.NotificationItem;
 import io.github.micwan88.moneytab.data.NotificationFilter;
+import io.github.micwan88.moneytab.messaging.TelegramBot;
 
 public class WebBot implements Closeable {
 	
@@ -310,8 +311,12 @@ public class WebBot implements Closeable {
 					returnCode = webBot.populateYoutubeLink(outNotificationItems);
 					
 					if (returnCode == 0) {
+						//Send TG msg
+						returnCode = webBot.sendTelegramNotification(outNotificationItems, webBot.getTgBotToken(), webBot.getTgBotChatID());
+						
 						//Save the checksum for next run to prevent duplicate sending
-						returnCode = webBot.saveChecksumHistory(webBot.getChecksumHistoryPath(), notificationItemList);
+						if (returnCode == 0)
+							returnCode = webBot.saveChecksumHistory(webBot.getChecksumHistoryPath(), notificationItemList);
 					}
 				}
 			}
@@ -321,6 +326,7 @@ public class WebBot implements Closeable {
 			myLogger.error("Unexpected error", e);
 		} finally {
 			webBot.close();
+			myLogger.debug("WebBot End");
 		}
 		
 		if (returnCode != 0)
@@ -578,23 +584,27 @@ public class WebBot implements Closeable {
 		return -3;
 	}
 	
-	public int sendTelegramNotification(List<NotificationItem> notificationItemList, String tgBotToken, String tgBotChaiIDs) {
+	public int sendTelegramNotification(List<NotificationItem> notificationItemList, String tgBotToken, String tgBotChatID) {
+		TelegramBot telegramBot = new TelegramBot(tgBotToken);
 		
+		int returnCode = 0;
 		for (NotificationItem notificationItem : notificationItemList) {
-			String outMsg = constructOutMsg(notificationItem);
+			returnCode = telegramBot.postNotifications(constructOutMsg(notificationItem), tgBotChatID);
 			
+			if (returnCode != 0)
+				return returnCode;
 		}
 		
-		return -1;
+		return 0;
 	}
 	
 	private String constructOutMsg(NotificationItem notificationItem) {
 		StringBuffer outMsg = new StringBuffer();
 		
-		outMsg.append(notificationItem.getFullDescription().replaceAll("\n", "<br/>"));
+		outMsg.append(notificationItem.getFullDescription());
 		
 		if (notificationItem.getVideoLink() != null) {
-			outMsg.append("<br/>");
+			outMsg.append("\n");
 			outMsg.append(notificationItem.getVideoLink());
 		}
 		

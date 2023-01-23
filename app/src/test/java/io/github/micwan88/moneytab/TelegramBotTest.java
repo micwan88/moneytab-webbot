@@ -20,8 +20,8 @@ public class TelegramBotTest {
 		
 		assumeTrue(gotRealCredentials);
 		
-		TelegramBot telegramBot = new TelegramBot(botToken, chatID);
-		int retrunCode = telegramBot.postNotification("postNotificationTest - Testing msg");
+		TelegramBot telegramBot = new TelegramBot(botToken);
+		int retrunCode = telegramBot.postNotifications("postNotificationTest - Testing msg", chatID);
 		
 		assertEquals(retrunCode, 0, "postNotificationTest");
 	}

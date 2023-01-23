@@ -25,8 +25,6 @@ public class TelegramBot {
 	
 	private String tgBotToken = null;
 	
-	private String tgBotChatID = null;
-	
 	public String getTgBotToken() {
 		return tgBotToken;
 	}
@@ -35,43 +33,40 @@ public class TelegramBot {
 		this.tgBotToken = tgBotToken;
 	}
 
-	public String getTgBotChatID() {
-		return tgBotChatID;
-	}
-
-	public void setTgBotChatID(String tgBotChatID) {
-		this.tgBotChatID = tgBotChatID;
-	}
-
-	public TelegramBot(String tgBotToken, String tgBotChatID) {
+	public TelegramBot(String tgBotToken) {
 		this.tgBotToken = tgBotToken;
-		this.tgBotChatID = tgBotChatID;
 	}
-
-	public int postNotification(String notificationMsg) {
+	
+	public int postNotifications(String notificationMsg, String tgBotChatIDs) {
 		String apiURL = URL_TELEGRAM_BOT_BASE + tgBotToken + URL_TELEGRAM_BOT_SENDMSG_CMD;
 		
-		String postMsg = filterTgRestrictedKeywords(notificationMsg);
+		String postMsg = convertLinefeedHTML(filterTgRestrictedKeywords(notificationMsg));
 		if (postMsg.length() > TELEGRAM_BOT_SENDMSG_MAXLENGTH)
 			postMsg = notificationMsg.substring(0, TELEGRAM_BOT_SENDMSG_MAXLENGTH);
 		
 		myLogger.debug("Start postNotification URL: {}", apiURL);
 		myLogger.debug("postMsg: {}", postMsg);
 		
-		JsonObject outputJson = new JsonObject();
-		outputJson.addProperty(TELEGRAM_BOT_SENDMSG_PARAM_CHATID, tgBotChatID);
-		outputJson.addProperty(TELEGRAM_BOT_SENDMSG_PARAM_MSGTEXT, postMsg);
-		outputJson.addProperty(TELEGRAM_BOT_SENDMSG_PARAM_PARSE_MODE, TELEGRAM_BOT_SENDMSG_VALUE_PARSE_MODE_HTML);
-		
-		myLogger.debug("jsonMsg: {}", outputJson.toString());
+		String[] tgBotChatIDArray = tgBotChatIDs.split(",");
 		
 		try {
-			String responseMsg = Request.Post(apiURL).bodyString(outputJson.toString(), ContentType.APPLICATION_JSON).execute().returnContent().asString();
-			if (responseMsg != null && responseMsg.matches("^\\{\"ok\"\\s*\\:\\s*true.*$")) {
-				myLogger.debug("postNotification done");
-				return 0;
+			for (String tgBotChatID : tgBotChatIDArray) {
+				myLogger.debug("Post to chatID: {}", tgBotChatID);
+				
+				JsonObject outputJson = new JsonObject();
+				outputJson.addProperty(TELEGRAM_BOT_SENDMSG_PARAM_CHATID, tgBotChatID);
+				outputJson.addProperty(TELEGRAM_BOT_SENDMSG_PARAM_MSGTEXT, postMsg);
+				outputJson.addProperty(TELEGRAM_BOT_SENDMSG_PARAM_PARSE_MODE, TELEGRAM_BOT_SENDMSG_VALUE_PARSE_MODE_HTML);
+				myLogger.debug("outputJson: {}", outputJson.toString());
+				
+				String responseMsg = Request.Post(apiURL).bodyString(outputJson.toString(), ContentType.APPLICATION_JSON).execute().returnContent().asString();
+				if (responseMsg == null || !responseMsg.matches("^\\{\"ok\"\\s*\\:\\s*true.*$")) {
+					myLogger.debug("postNotification error chatID: {} - responseMsg: {}", tgBotChatID, responseMsg);
+					return -1;
+				}
+				myLogger.debug("postNotification done with chatID: {}", tgBotChatID);
 			}
-			myLogger.debug("postNotification error - responseMsg: {}", responseMsg);
+			return 0;
 		} catch (ClientProtocolException e) {
 			myLogger.error("Cannot execute http request", e);
 		} catch (IOException e) {
@@ -79,10 +74,14 @@ public class TelegramBot {
 		} catch (Exception e) {
 			myLogger.error("Unexpected error", e);
 		}
-		return -1;
+		return -2;
 	}
 	
 	private String filterTgRestrictedKeywords(String sourceString) {
 		return sourceString.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+	}
+	
+	private String convertLinefeedHTML(String sourceString) {
+		return sourceString.replaceAll("\n", "<br/>");
 	}
 }
