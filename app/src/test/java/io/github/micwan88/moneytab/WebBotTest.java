@@ -30,7 +30,7 @@ class WebBotTest {
 	@BeforeAll void beforeTest() throws IOException {
 		//Hard code test properties
 		Properties appProperties = new Properties();
-		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE, "false");
+		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE, "true");
 		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_DETACH_MODE, "false");
 		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, "8000");
 		appProperties.put(WebBotConst.APP_PROPERTIES_SLEEP_TIME, "10000");

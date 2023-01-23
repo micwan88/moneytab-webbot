@@ -11,3 +11,4 @@ build
 #From app
 /app/userdata
 /app/app.log
+/app/checksum.dat
