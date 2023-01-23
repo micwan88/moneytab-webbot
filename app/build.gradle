@@ -34,6 +34,9 @@ dependencies {
     //helperclass4j
     implementation 'io.github.micwan88:helperclass4j:2.0.1'
     
+    //commons-codec for checksum
+    implementation 'commons-codec:commons-codec:1.15'
+    
     //selenium
     implementation 'org.seleniumhq.selenium:selenium-java:4.7.2'
     
