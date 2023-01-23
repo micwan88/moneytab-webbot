@@ -18,6 +18,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 import io.github.micwan88.moneytab.bean.NotificationItem;
+import io.github.micwan88.moneytab.data.NotificationFilter;
 
 @TestInstance(Lifecycle.PER_CLASS)
 class WebBotTest {
@@ -99,8 +100,8 @@ class WebBotTest {
     	boolean logonResult = webBot.loginMoneyTabWeb(username, password);
         assertTrue(logonResult, "extractNotificationTest - logon");
         
-        String dateFilterStr = webBot.getNotifyDateFilterStr();
-        String titleFilterStr = webBot.getNotifyTitleFilterStr();
+        NotificationFilter dateFilter = webBot.getDateFilter();
+        NotificationFilter titleFilter = webBot.getTitleFilter();
         
         List<NotificationItem> notificationItemList = webBot.extractNotificationList(null, null);
         assertNotNull(notificationItemList, "extractNotificationTest - notificationItemList not null");
@@ -108,7 +109,7 @@ class WebBotTest {
         int fullListCount = notificationItemList.size();
         assertTrue(fullListCount > 0, "extractNotificationTest - notificationItemList.size > 0");
         
-        notificationItemList = webBot.extractNotificationList(dateFilterStr, titleFilterStr);
+        notificationItemList = webBot.extractNotificationList(dateFilter, titleFilter);
         assertTrue(fullListCount >= notificationItemList.size(), "extractNotificationTest - filter work");
     }
 }

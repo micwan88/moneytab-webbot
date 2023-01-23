@@ -3,6 +3,10 @@ package io.github.micwan88.moneytab;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -10,6 +14,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
@@ -34,6 +39,8 @@ public class WebBot implements Closeable {
 	private ChromeDriverService chromeDriverService = null;
 	private WebDriver webDriver = null;
 	
+	private Path checksumHistoryPath = Paths.get(WebBotConst.WEBBOT_CHECKSUM_HISTORY_FILENAME); 
+	
 	//App Parameters
 	private boolean browserHeadlessMode = false;
 	private boolean browserDetachMode = false;
@@ -45,8 +52,9 @@ public class WebBot implements Closeable {
 	private String tgBotToken = null;
 	private String tgBotChatID = null;
 	
-	private String notifyDateFilterStr = null;
-	private String notifyTitleFilterStr = null;
+	private NotificationFilter dateFilter = null;
+	private NotificationFilter titleFilter = null;
+	private NotificationFilter checksumFilter = null;
 	
 	private long parseLong(String arg) {
 		try {
@@ -57,7 +65,31 @@ public class WebBot implements Closeable {
 		return 0L;
 	}
 	
+	private void readChecksumHistory(Path checksumHistoryPath) {
+		myLogger.debug("Start readChecksumHistory");
+		if (Files.isReadable(checksumHistoryPath)) {
+			try {
+				List<String> checksumList = Files.readAllLines(checksumHistoryPath, Charset.forName("UTF-8"));
+				checksumFilter = new NotificationFilter(checksumList, true);
+				
+				myLogger.debug("Got checksum filter : {}", checksumFilter);
+			} catch (IOException e) {
+				myLogger.error("Cannot read checksum history file: {}", checksumHistoryPath.toAbsolutePath(), e);
+			}
+		} else
+			myLogger.warn("checksumHistory cannot be read : {}", checksumHistoryPath.toAbsolutePath());
+		myLogger.debug("End readChecksumHistory");
+	}
+	
+	public void saveChecksumHistory(Path checksumHistoryPath, List<NotificationItem> notificationItem) {
+		myLogger.debug("Start saveChecksumHistory");
+		
+		myLogger.debug("End saveChecksumHistory");
+	}
+	
 	public int loadAppParameters(Properties appProperties) {
+		SimpleDateFormat dateFormat = new SimpleDateFormat(WebBotConst.NOTIFICATION_DATE_FORMAT_PATTERN);
+		
 		String tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE);
 		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
 			browserHeadlessMode = true;
@@ -110,12 +142,12 @@ public class WebBot implements Closeable {
 		
 		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_NOTIFY_DATE_FILTER);
 		if (tempStr != null && !tempStr.trim().equals("")) {
-			notifyDateFilterStr = tempStr.trim();
+			dateFilter = new NotificationFilter(tempStr.trim().replaceAll("TODAY", dateFormat.format(new Date())));
 		}
 		
 		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER);
 		if (tempStr != null && !tempStr.trim().equals("")) {
-			notifyTitleFilterStr = tempStr.trim();
+			titleFilter = new NotificationFilter(tempStr.trim());
 		}
 		
 		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_TG_BOT_TOKEN);
@@ -184,12 +216,12 @@ public class WebBot implements Closeable {
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_NOTIFY_DATE_FILTER);
 		if (tempStr != null && !tempStr.trim().equals("")) {
-			notifyDateFilterStr = tempStr.trim();
+			dateFilter = new NotificationFilter(tempStr.trim().replaceAll("TODAY", dateFormat.format(new Date())));
 		}
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER);
 		if (tempStr != null && !tempStr.trim().equals("")) {
-			notifyTitleFilterStr = tempStr.trim();
+			titleFilter = new NotificationFilter(tempStr.trim());
 		}
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_TG_BOT_TOKEN);
@@ -215,8 +247,8 @@ public class WebBot implements Closeable {
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_LOGIN, login);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_PASSWORD, password);
 		
-		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_NOTIFY_DATE_FILTER, notifyDateFilterStr);
-		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER, notifyTitleFilterStr);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_NOTIFY_DATE_FILTER, dateFilter);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_NOTIFY_TITLE_FILTER, titleFilter);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_TG_BOT_TOKEN, tgBotToken);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_TG_BOT_CHATID, tgBotChatID);
 	}
@@ -245,6 +277,12 @@ public class WebBot implements Closeable {
 			webBot.init();
 			
 			boolean result = webBot.loginMoneyTabWeb(webBot.getLogin(), webBot.getPassword());
+			
+			//If logon success
+			if (result) {
+				
+				List<NotificationItem> notificationItem = webBot.extractNotificationList(webBot.getDateFilter(), webBot.getTitleFilter());
+			}
 		} catch (IOException e) {
 			myLogger.error("Chromedriver init error", e);
 		} catch (Exception e) {
@@ -275,6 +313,9 @@ public class WebBot implements Closeable {
 			chromeOptions.setExperimentalOption("detach", true);
 		
 		webDriver = new ChromeDriver(chromeDriverService, chromeOptions);
+		
+		//Read the checksum history and convert it to filter
+		readChecksumHistory(checksumHistoryPath);
 	}
 
 	@Override
@@ -354,7 +395,8 @@ public class WebBot implements Closeable {
 		return false;
 	}
 	
-	public List<NotificationItem> extractNotificationList(String dateFilterStr, String titleFilterStr) {
+	//We cannot put checksum filter here, bcoz we still need get to same list of checksum to save in file through out a day
+	public List<NotificationItem> extractNotificationList(final NotificationFilter notifyDateFilter, final NotificationFilter notifyTitleFilter) {
 		myLogger.debug("Start extractNotificationList");
 		
 		String targetURL = "https://www.money-tab.com/profile/notification";
@@ -382,28 +424,14 @@ public class WebBot implements Closeable {
 			
 			myLogger.debug("notificationItemElementList.size : {}", notificationItemElementList.size());
 			
-			NotificationFilter dateFilter = null;
-			NotificationFilter titleFilter = null;
-			WebElement notificationTypeElement = null;
-			WebElement notificationLinkElement = null;
-			WebElement notificationDateElement = null;
-			WebElement notificationTitleElement = null;
-			WebElement notificationNoLinkDivElement = null;
-			NotificationItem notificationItem = null;
 			ArrayList<NotificationItem> notificationItemList = new ArrayList<>();
-			SimpleDateFormat dateFormat = new SimpleDateFormat(WebBotConst.NOTIFICATION_DATE_FORMAT_PATTERN);
-			
-			if (dateFilterStr != null && !dateFilterStr.trim().isEmpty()) {
-				dateFilter = new NotificationFilter(dateFilterStr.replaceAll("TODAY", dateFormat.format(new Date())));
-			}
-			
-			if (titleFilterStr != null && !titleFilterStr.trim().isEmpty()) {
-				titleFilter = new NotificationFilter(titleFilterStr);
-			}
-			
-			for (WebElement notificationItemElement : notificationItemElementList) {
-				notificationItem = new NotificationItem();
-				notificationTypeElement = notificationItemElement.findElement(By.cssSelector("div > span + span"));
+			notificationItemElementList.forEach((notificationItemElement) -> {
+				WebElement notificationLinkElement = null;
+				WebElement notificationDateElement = null;
+				WebElement notificationTitleElement = null;
+				WebElement notificationNoLinkDivElement = null;
+				NotificationItem notificationItem = new NotificationItem();
+				WebElement notificationTypeElement = notificationItemElement.findElement(By.cssSelector("div > span + span"));
 				if (notificationTypeElement.getText().trim().equals(WebBotConst.NOTIFICATION_TYPE_NEW_VIDEO)) {
 					notificationLinkElement = notificationItemElement.findElement(By.cssSelector("div + div > a.block[href]"));
 					notificationDateElement = notificationLinkElement.findElement(By.cssSelector("div > span"));
@@ -414,6 +442,8 @@ public class WebBot implements Closeable {
 					notificationItem.setTitle(notificationTitleElement.getText().trim());
 					notificationItem.setFullDescription(notificationLinkElement.getText().trim());
 					notificationItem.setPageLink(notificationLinkElement.getAttribute("href").trim());
+					
+					notificationItem.setFullDescriptionChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
 				} else {
 					//No link if just news notification
 					notificationNoLinkDivElement = notificationItemElement.findElement(By.cssSelector("div + div"));
@@ -424,26 +454,26 @@ public class WebBot implements Closeable {
 					notificationItem.setDateInString(notificationDateElement.getText().trim());
 					notificationItem.setTitle(notificationTitleElement.getText().trim());
 					notificationItem.setFullDescription(notificationNoLinkDivElement.getText().trim());
+					
+					notificationItem.setFullDescriptionChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
 				}
 				
-				
-				
-				if (dateFilter != null && !dateFilter.filterDate(notificationItem)) {
+				if (notifyDateFilter != null && !notifyDateFilter.filterDate(notificationItem)) {
 					myLogger.debug("Filtered by date: {}", notificationItem);
-					continue;
+					return;
 				}
 				
 				//Title filter only apply for new video
 				if (notificationItem.getType().equals(WebBotConst.NOTIFICATION_TYPE_NEW_VIDEO)) {
-					if (titleFilter != null && !titleFilter.filterTitle(notificationItem)) {
+					if (notifyTitleFilter != null && !notifyTitleFilter.filterTitle(notificationItem)) {
 						myLogger.debug("Filtered by title: {}", notificationItem);
-						continue;
+						return;
 					}
 				}
 				
 				notificationItemList.add(notificationItem);
 				myLogger.debug("Add to list : {}", notificationItem);
-			}
+			});
 			
 			myLogger.debug("Output notificationItemList.size : {}", notificationItemList.size());
 			return notificationItemList;
@@ -486,6 +516,22 @@ public class WebBot implements Closeable {
 			myLogger.debug("End checkIfPageURLMatched");
 		}
 		return false;
+	}
+
+	public Path getChecksumHistoryPath() {
+		return checksumHistoryPath;
+	}
+
+	public void setChecksumHistoryPath(Path checksumHistoryPath) {
+		this.checksumHistoryPath = checksumHistoryPath;
+	}
+
+	public NotificationFilter getChecksumFilter() {
+		return checksumFilter;
+	}
+
+	public void setChecksumFilter(NotificationFilter checksumFilter) {
+		this.checksumFilter = checksumFilter;
 	}
 
 	public boolean isBrowserHeadlessMode() {
@@ -544,20 +590,20 @@ public class WebBot implements Closeable {
 		return password;
 	}
 
-	public String getNotifyDateFilterStr() {
-		return notifyDateFilterStr;
+	public NotificationFilter getDateFilter() {
+		return dateFilter;
 	}
 
-	public void setNotifyDateFilterStr(String notifyDateFilterStr) {
-		this.notifyDateFilterStr = notifyDateFilterStr;
+	public void setDateFilter(NotificationFilter dateFilter) {
+		this.dateFilter = dateFilter;
 	}
 
-	public String getNotifyTitleFilterStr() {
-		return notifyTitleFilterStr;
+	public NotificationFilter getTitleFilter() {
+		return titleFilter;
 	}
 
-	public void setNotifyTitleFilterStr(String notifyTitleFilterStr) {
-		this.notifyTitleFilterStr = notifyTitleFilterStr;
+	public void setTitleFilter(NotificationFilter titleFilter) {
+		this.titleFilter = titleFilter;
 	}
 
 	public String getTgBotToken() {

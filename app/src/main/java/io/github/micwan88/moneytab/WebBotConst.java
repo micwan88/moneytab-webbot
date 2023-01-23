@@ -4,6 +4,10 @@ public class WebBotConst {
 	public static final String NOTIFICATION_TYPE_NEW_VIDEO = "新到影片";
 	public static final String NOTIFICATION_TYPE_IMPORTANT_NEWS = "重要通知";
 	
+	public static final String NOTIFICATION_DATE_FORMAT_PATTERN = "dd.MM.yyyy";
+	public static final String WEBBOT_CHECKSUM_HISTORY_FILENAME = "checksum.dat";
+	
+	//APP PROPERTIES KEY
 	public static final String APP_PROPERTIES_BROWSER_HEADLESS_MODE = "moneytab.bot.browserHeadlessMode";
 	public static final String APP_PROPERTIES_BROWSER_DETACH_MODE = "moneytab.bot.browserDetachMode";
 	public static final String APP_PROPERTIES_BROWSER_USERDATA = "moneytab.bot.browserUserData";
@@ -18,6 +22,4 @@ public class WebBotConst {
 	
 	public static final String APP_PROPERTIES_TG_BOT_TOKEN = "moneytab.bot.tgBotToken";
 	public static final String APP_PROPERTIES_TG_BOT_CHATID = "moneytab.bot.tgBotChatID";
-	
-	public static final String NOTIFICATION_DATE_FORMAT_PATTERN = "dd.MM.yyyy";
 }

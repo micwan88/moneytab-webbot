@@ -12,6 +12,8 @@ public class NotificationItem {
 	private String pageLink = null;
 	
 	private String videoLink = null;
+	
+	private String fullDescriptionChecksum = null;
 
 	public String getType() {
 		return type;
@@ -61,6 +63,14 @@ public class NotificationItem {
 		this.videoLink = videoLink;
 	}
 
+	public String getFullDescriptionChecksum() {
+		return fullDescriptionChecksum;
+	}
+
+	public void setFullDescriptionChecksum(String fullDescriptionChecksum) {
+		this.fullDescriptionChecksum = fullDescriptionChecksum;
+	}
+
 	public NotificationItem() {
 	}
 
@@ -79,7 +89,8 @@ public class NotificationItem {
 
 	@Override
 	public String toString() {
-		return "NotificationItem [type=" + type + ", dateInString=" + dateInString + ", title=" + title + ", pageLink="
-				+ pageLink + ", videoLink=" + videoLink + ", fullDescription=" + fullDescription + "]";
+		return "NotificationItem [type=" + type + ",dateInString=" + dateInString + ",title=" + title
+				+ ",fullDescription=" + fullDescription + ",pageLink=" + pageLink + ",videoLink=" + videoLink
+				+ ",fullDescriptionChecksum=" + fullDescriptionChecksum + "]";
 	}
 }

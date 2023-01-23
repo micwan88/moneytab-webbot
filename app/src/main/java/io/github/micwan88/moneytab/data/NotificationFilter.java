@@ -2,6 +2,8 @@ package io.github.micwan88.moneytab.data;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import io.github.micwan88.moneytab.bean.NotificationItem;
 
@@ -38,6 +40,14 @@ public class NotificationFilter {
 		}
 	}
 	
+	public NotificationFilter(List<String> filterStringInList, boolean isBlackListFilter) {
+		if (filterStringInList != null) {
+			filterItemSet.addAll(filterStringInList);
+		}
+		
+		this.isBlackListFilter = isBlackListFilter;
+	}
+	
 	public boolean filterDate(NotificationItem notificationItem) {
 		boolean result = isBlackListFilter ^ filterItemSet.contains(notificationItem.getDateInString());
 		return result;
@@ -46,5 +56,15 @@ public class NotificationFilter {
 	public boolean filterTitle(NotificationItem notificationItem) {
 		boolean result = isBlackListFilter ^ filterItemSet.contains(notificationItem.getTitle());
 		return result;
+	}
+	
+	public boolean filterChecksum(NotificationItem notificationItem) {
+		boolean result = isBlackListFilter ^ filterItemSet.contains(notificationItem.getFullDescriptionChecksum());
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "NotificationFilter [filterItemSet=(" + filterItemSet.stream().collect(Collectors.joining(",")) + "), isBlackListFilter=" + isBlackListFilter + "]";
 	}
 }
