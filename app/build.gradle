@@ -23,7 +23,6 @@ repositories {
 }
 
 dependencies {
-
 	//Log4j2
     implementation 'org.apache.logging.log4j:log4j-api:2.19.0'
     implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
@@ -36,6 +35,9 @@ dependencies {
     
     //commons-codec for checksum
     implementation 'commons-codec:commons-codec:1.15'
+    
+    //httpclient for tgBotPost
+    implementation 'org.apache.httpcomponents:fluent-hc:4.5.14'
     
     //selenium
     implementation 'org.seleniumhq.selenium:selenium-java:4.7.2'
