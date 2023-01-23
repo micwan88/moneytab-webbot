@@ -578,6 +578,29 @@ public class WebBot implements Closeable {
 		return -3;
 	}
 	
+	public int sendTelegramNotification(List<NotificationItem> notificationItemList, String tgBotToken, String tgBotChaiIDs) {
+		
+		for (NotificationItem notificationItem : notificationItemList) {
+			String outMsg = constructOutMsg(notificationItem);
+			
+		}
+		
+		return -1;
+	}
+	
+	private String constructOutMsg(NotificationItem notificationItem) {
+		StringBuffer outMsg = new StringBuffer();
+		
+		outMsg.append(notificationItem.getFullDescription().replaceAll("\n", "<br/>"));
+		
+		if (notificationItem.getVideoLink() != null) {
+			outMsg.append("<br/>");
+			outMsg.append(notificationItem.getVideoLink());
+		}
+		
+		return outMsg.toString();
+	}
+	
 	private String tryExtractYoutubeLink() {
 		myLogger.debug("Start tryExtractYoutubeLink");
 		try {

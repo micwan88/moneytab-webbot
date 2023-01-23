@@ -63,9 +63,11 @@ public class TelegramBot {
 		outputJson.addProperty(TELEGRAM_BOT_SENDMSG_PARAM_MSGTEXT, postMsg);
 		outputJson.addProperty(TELEGRAM_BOT_SENDMSG_PARAM_PARSE_MODE, TELEGRAM_BOT_SENDMSG_VALUE_PARSE_MODE_HTML);
 		
+		myLogger.debug("jsonMsg: {}", outputJson.toString());
+		
 		try {
-			String responseMsg = Request.Post(apiURL).bodyString(postMsg, ContentType.APPLICATION_JSON).execute().returnContent().asString();
-			if (responseMsg != null && responseMsg.matches("\"ok\"\\s*\\:\\s*true")) {
+			String responseMsg = Request.Post(apiURL).bodyString(outputJson.toString(), ContentType.APPLICATION_JSON).execute().returnContent().asString();
+			if (responseMsg != null && responseMsg.matches("^\\{\"ok\"\\s*\\:\\s*true.*$")) {
 				myLogger.debug("postNotification done");
 				return 0;
 			}
