@@ -90,11 +90,11 @@ public class WebBot implements Closeable {
 			boolean isFirstItem = true;
 			int count = 0;
 			for (NotificationItem notificationItem : notificationItemList) {
-				if (!isFirstItem) {
+				if (!isFirstItem)
 					bw.newLine();
-					isFirstItem = false;
-				}
+				
 				bw.write(notificationItem.getFullDescriptionChecksum());
+				isFirstItem = false;
 				count++;
 			}
 			
