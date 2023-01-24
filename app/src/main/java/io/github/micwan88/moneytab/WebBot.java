@@ -22,6 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Cookie;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
@@ -630,7 +631,20 @@ public class WebBot implements Closeable {
 	
 	public void printAllCookies() {
 		Set<Cookie> cookies = webDriver.manage().getCookies();
-		cookies.forEach((cookie) -> myLogger.debug(cookie));
+		cookies.forEach((cookie) -> myLogger.debug("Cookie : {}", cookie));
+	}
+	
+	public void printLocalStorageItems() {
+		JavascriptExecutor js = (JavascriptExecutor)webDriver;
+		
+		String key = null;
+		long count = (Long)js.executeScript("return window.localStorage.length;");
+		myLogger.debug("printLocalStorageItems count: {}", count);
+		
+		for (int i=0; i<count; i++) {
+			key = (String)js.executeScript("return window.localStorage.key(" + i + ");");
+			myLogger.debug("{}: {}", key, js.executeScript("return window.localStorage.getItem('" + key + "');"));
+		}
 	}
 	
 	private String constructOutMsg(NotificationItem notificationItem) {
