@@ -1,8 +1,18 @@
 package io.github.micwan88.moneytab.selenium;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.Cookie;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriver.Options;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -10,6 +20,8 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.firefox.FirefoxProfile;
 
 public class WebDriverMgr {
+	
+	private static final Logger myLogger = LogManager.getLogger(WebDriverMgr.class);
 	
 	public enum DRIVER_TYPE {
 		CHROME,
@@ -60,5 +72,65 @@ public class WebDriverMgr {
 			chromeOptions.addArguments(driverOptions);
 		
 		return new ChromeDriver(chromeOptions);
+	}
+	
+	public static void saveCookie(Path cookieFilePath, Set<Cookie> cookies) {
+		myLogger.debug("Saving cookie to file: {}", cookieFilePath.toAbsolutePath());
+		ObjectOutputStream objOutStream = null;
+		try {
+			objOutStream = new ObjectOutputStream(Files.newOutputStream(cookieFilePath));
+			
+			myLogger.debug("Number of cookies: {}", cookies.size());
+			objOutStream.writeInt(cookies.size());
+			
+			for (Cookie cookie : cookies) {
+				myLogger.debug("Cookie Name {}, Value {}", cookie.getName(), cookie.getValue());
+				objOutStream.writeObject(cookie);
+			}
+			
+			objOutStream.flush();
+		} catch (IOException e) {
+			myLogger.error("Error in saving cookie file", e);
+		} finally {
+			try {
+				objOutStream.close();
+			} catch (IOException e) {
+				//Do Nothing
+			}
+		}
+	}
+	
+	public static void loadCookie(Path cookieFilePath, WebDriver webDriver) {
+		myLogger.debug("Loading cookie from file: {}", cookieFilePath.toAbsolutePath());
+		if (!Files.isReadable(cookieFilePath)) {
+			myLogger.debug("Cookie file not exist, so skip loading : {}", cookieFilePath.toAbsolutePath());
+			return;
+		}
+		
+		Options webDriverOptions = webDriver.manage();
+		ObjectInputStream objInStream = null;
+		try {
+			objInStream = new ObjectInputStream(Files.newInputStream(cookieFilePath));
+			
+			int noOfCookies = objInStream.readInt();
+			myLogger.debug("Number of cookies in file: {}", noOfCookies);
+			
+			for (int i=0; i<noOfCookies; i++) {
+				Cookie cookie = (Cookie)objInStream.readObject();
+				myLogger.debug("Read cookie: Name {}, Value {}", cookie.getName(), cookie.getValue());
+				
+				webDriverOptions.addCookie(cookie);
+			}
+		} catch (IOException e) {
+			myLogger.error("Error in loading cookie file", e);
+		} catch (ClassNotFoundException e) {
+			myLogger.error("Error in loading cookie file", e);
+		} finally {
+			try {
+				objInStream.close();
+			} catch (IOException e) {
+				//Do Nothing
+			}
+		}
 	}
 }

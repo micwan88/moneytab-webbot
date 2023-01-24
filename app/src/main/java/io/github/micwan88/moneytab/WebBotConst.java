@@ -6,6 +6,8 @@ public class WebBotConst {
 	
 	public static final String NOTIFICATION_DATE_FORMAT_PATTERN = "dd.MM.yyyy";
 	public static final String WEBBOT_CHECKSUM_HISTORY_FILENAME = "checksum.dat";
+	public static final String WEBBOT_COOKIE_DATA_FILENAME = "cookies.dat";
+	public static final String WEBBOT_LOCALSTORAGE_DATA_FILENAME = "lstorage.dat";
 	
 	//APP PROPERTIES KEY
 	public static final String APP_PROPERTIES_BROWSER_TYPE = "moneytab.bot.browserType";
