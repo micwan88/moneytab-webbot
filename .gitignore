@@ -12,3 +12,5 @@ build
 /app/userdata
 /app/app.log
 /app/checksum.dat
+/app/cookies.dat
+/app/lstorage.dat

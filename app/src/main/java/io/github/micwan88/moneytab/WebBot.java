@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -109,6 +110,23 @@ public class WebBot implements Closeable {
 		return -1;
 	}
 	
+	public void persistCookies() {
+		myLogger.debug("Start persistCookies");
+		if (browserPersistCookie) {
+			WebDriverMgr.saveCookie(Paths.get(WebBotConst.WEBBOT_COOKIE_DATA_FILENAME), webDriver.manage().getCookies());
+		}
+		myLogger.debug("End persistCookies");
+	}
+	
+	public void persistLocalstorageItems() {
+		myLogger.debug("Start persistLocalstorageItems");
+		if (browserPersistLocalStorage) {
+			HashMap<String, String> localStorageItemsMap = WebDriverMgr.getLocalStorageItems(webDriver);
+			WebDriverMgr.saveLocalStorageItems(Paths.get(WebBotConst.WEBBOT_LOCALSTORAGE_DATA_FILENAME), localStorageItemsMap);
+		}
+		myLogger.debug("End persistLocalstorageItems");
+	}
+	
 	public int loadAppParameters(Properties appProperties) {
 		SimpleDateFormat dateFormat = new SimpleDateFormat(WebBotConst.NOTIFICATION_DATE_FORMAT_PATTERN);
 		
@@ -126,8 +144,8 @@ public class WebBot implements Closeable {
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			browserUserData = new File(tempStr);
 			
-			if (!browserUserData.isDirectory() || !browserUserData.exists()) {
-				myLogger.error("Browser user data not exist {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, browserUserData.getAbsolutePath());
+			if (!browserUserData.isDirectory() && !browserUserData.mkdirs()) {
+				myLogger.error("Cannot create browser user data directory {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, browserUserData.getAbsolutePath());
 				return -1;
 			}
 		}
@@ -202,21 +220,29 @@ public class WebBot implements Closeable {
 		 */
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE);
-		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
-			browserHeadlessMode = true;
+		if (tempStr != null) {
+			if (tempStr.trim().equalsIgnoreCase("true")) {
+				browserHeadlessMode = true;
+			} else {
+				browserHeadlessMode = false;
+			}
 		}
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_TYPE);
-		if (tempStr != null && tempStr.trim().equalsIgnoreCase(DRIVER_TYPE.FIREFOX.name())) {
-			browserType = DRIVER_TYPE.FIREFOX;
-		}
+		if (tempStr != null) {
+			if (tempStr.trim().equalsIgnoreCase(DRIVER_TYPE.FIREFOX.name())) {
+				browserType = DRIVER_TYPE.FIREFOX;
+			} else {
+				browserType = DRIVER_TYPE.CHROME;
+			}
+		}	
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_USERDATA);
 		if (tempStr != null && !tempStr.trim().equals("")) {
 			browserUserData = new File(tempStr);
 			
-			if (!browserUserData.isDirectory() || !browserUserData.exists()) {
-				myLogger.error("Browser user data not exist {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, browserUserData.getAbsolutePath());
+			if (!browserUserData.isDirectory() && !browserUserData.mkdirs()) {
+				myLogger.error("Cannot create browser user data directory {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, browserUserData.getAbsolutePath());
 				return -1;
 			}
 		}
@@ -237,13 +263,21 @@ public class WebBot implements Closeable {
 		}
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_COOKIE);
-		if (tempStr != null && tempStr.trim().equalsIgnoreCase("false")) {
-			browserPersistCookie = false;
+		if (tempStr != null) {
+			if (tempStr.trim().equalsIgnoreCase("false")) {
+				browserPersistCookie = false;
+			} else {
+				browserPersistCookie = true;
+			}
 		}
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_LOCAL_STORAGE);
-		if (tempStr != null && tempStr.trim().equalsIgnoreCase("false")) {
-			browserPersistLocalStorage = false;
+		if (tempStr != null) {
+			if (tempStr.trim().equalsIgnoreCase("false")) {
+				browserPersistLocalStorage = false;
+			} else {
+				browserPersistLocalStorage = true;
+			}
 		}
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_SLEEP_TIME);
@@ -348,7 +382,7 @@ public class WebBot implements Closeable {
 					
 					myLogger.debug("Filtered by checksum outNotificationItems.size : {}", outNotificationItems.size());
 					
-					//Extract youtube link
+					//Extract YouTube link
 					returnCode = webBot.populateYoutubeLink(outNotificationItems);
 					
 					if (returnCode == 0) {
@@ -358,6 +392,10 @@ public class WebBot implements Closeable {
 						//Save the checksum for next run to prevent duplicate sending
 						if (returnCode == 0)
 							returnCode = webBot.saveChecksumHistory(webBot.getChecksumHistoryPath(), notificationItemList);
+						
+						webBot.persistCookies();
+						
+						webBot.persistLocalstorageItems();
 					}
 				}
 			}
@@ -398,14 +436,6 @@ public class WebBot implements Closeable {
 			webDriver = webDriverMgr.getWebDriver(DRIVER_TYPE.CHROME, browserHeadlessMode, driverOptions);
 		}
 		
-		if (browserPersistCookie) {
-			
-		}
-		
-		if (browserPersistLocalStorage) {
-			
-		}
-		
 		//Read the checksum history and convert it to filter
 		readChecksumHistory(checksumHistoryPath);
 	}
@@ -434,6 +464,22 @@ public class WebBot implements Closeable {
 		
 		try {
 			webDriver.get(targetURL);
+			
+			boolean loadedCookies = false;
+			boolean loadedLocalStorageItems = false;
+			
+			if (browserPersistCookie) {
+				loadedCookies = WebDriverMgr.loadCookie(Paths.get(WebBotConst.WEBBOT_COOKIE_DATA_FILENAME), webDriver);
+			}
+			
+			if (browserPersistLocalStorage) {
+				loadedLocalStorageItems = WebDriverMgr.loadLocalStorageItems(Paths.get(WebBotConst.WEBBOT_LOCALSTORAGE_DATA_FILENAME), webDriver);
+			}
+			
+			//If either loaded cookies / local storage items, reload the page
+			if (loadedCookies || loadedLocalStorageItems) {
+				webDriver.get(targetURL);
+			}
 			
 			if (checkIfAlreadyLogon())
 				return true;

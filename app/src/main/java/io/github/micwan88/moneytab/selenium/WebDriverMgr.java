@@ -5,7 +5,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
@@ -101,11 +103,11 @@ public class WebDriverMgr {
 		}
 	}
 	
-	public static void loadCookie(Path cookieFilePath, WebDriver webDriver) {
+	public static boolean loadCookie(Path cookieFilePath, WebDriver webDriver) {
 		myLogger.debug("Loading cookie from file: {}", cookieFilePath.toAbsolutePath());
 		if (!Files.isReadable(cookieFilePath)) {
 			myLogger.debug("Cookie file not exist, so skip loading : {}", cookieFilePath.toAbsolutePath());
-			return;
+			return false;
 		}
 		
 		Options webDriverOptions = webDriver.manage();
@@ -122,6 +124,7 @@ public class WebDriverMgr {
 				
 				webDriverOptions.addCookie(cookie);
 			}
+			return noOfCookies > 0;
 		} catch (IOException e) {
 			myLogger.error("Error in loading cookie file", e);
 		} catch (ClassNotFoundException e) {
@@ -133,26 +136,97 @@ public class WebDriverMgr {
 				//Do Nothing
 			}
 		}
+		return false;
 	}
 	
 	public static void printCookies(WebDriver webDriver) {
 		Set<Cookie> cookies = webDriver.manage().getCookies();
 		
-		myLogger.debug("printAllCookies count: {}", cookies.size());
+		myLogger.debug("Total cookies count: {}", cookies.size());
 		
 		cookies.forEach((cookie) -> myLogger.debug("Cookie : {}", cookie));
 	}
 	
-	public static void printLocalStorageItems(WebDriver webDriver) {
-		JavascriptExecutor js = (JavascriptExecutor)webDriver;
+	public static HashMap<String, String> getLocalStorageItems(WebDriver webDriver) {
+		JavascriptExecutor jsExecutor = (JavascriptExecutor)webDriver;
 		
-		String key = null;
-		long count = (Long)js.executeScript("return window.localStorage.length;");
-		myLogger.debug("printLocalStorageItems count: {}", count);
+		long itemCount = (Long)jsExecutor.executeScript("return window.localStorage.length;");
+		myLogger.debug("LocalStorageItems count: {}", itemCount);
 		
-		for (int i=0; i<count; i++) {
-			key = (String)js.executeScript("return window.localStorage.key(" + i + ");");
-			myLogger.debug("{}: {}", key, js.executeScript("return window.localStorage.getItem('" + key + "');"));
+		HashMap<String, String> localStorageItemsMap = new HashMap<>();
+		String itemKey = null;
+		String itemValue = null;
+		for (int i=0; i<itemCount; i++) {
+			itemKey = (String)jsExecutor.executeScript("return window.localStorage.key(" + i + ");");
+			itemValue = (String)jsExecutor.executeScript("return window.localStorage.getItem('" + itemKey + "');");
+			
+			localStorageItemsMap.put(itemKey, itemValue);
+			myLogger.debug("{}: {}", itemKey, itemValue);
 		}
+		return localStorageItemsMap;
+	}
+	
+	public static void saveLocalStorageItems(Path localStorageFilePath, HashMap<String, String> localStorageItemsMap) {
+		myLogger.debug("Saving localStorage to file: {}", localStorageFilePath.toAbsolutePath());
+		ObjectOutputStream objOutStream = null;
+		try {
+			objOutStream = new ObjectOutputStream(Files.newOutputStream(localStorageFilePath));
+			
+			myLogger.debug("Number of localStorageItems: {}", localStorageItemsMap.size());
+			objOutStream.writeObject(localStorageItemsMap);
+			
+			objOutStream.flush();
+		} catch (IOException e) {
+			myLogger.error("Error in saving cookie file", e);
+		} finally {
+			try {
+				objOutStream.close();
+			} catch (IOException e) {
+				//Do Nothing
+			}
+		}
+	}
+	
+	public static boolean loadLocalStorageItems(Path localStorageFilePath, WebDriver webDriver) {
+		myLogger.debug("Loading localStorage from file: {}", localStorageFilePath.toAbsolutePath());
+		if (!Files.isReadable(localStorageFilePath)) {
+			myLogger.debug("LocalStorage file not exist, so skip loading : {}", localStorageFilePath.toAbsolutePath());
+			return false;
+		}
+		
+		JavascriptExecutor jsExecutor = (JavascriptExecutor)webDriver;
+		ObjectInputStream objInStream = null;
+		try {
+			objInStream = new ObjectInputStream(Files.newInputStream(localStorageFilePath));
+			
+			@SuppressWarnings("unchecked")
+			HashMap<String, String> localStorageMap = (HashMap<String, String>)objInStream.readObject();
+			myLogger.debug("Number of localStorageItem in file: {}", localStorageMap.size());
+			
+			for (Entry<String, String> mapEntry : localStorageMap.entrySet()) {
+				myLogger.debug("Read localStorageItem: Key {}, Value {}", mapEntry.getKey(), mapEntry.getValue());
+				
+				jsExecutor.executeScript("return window.localStorage.setItem('" + mapEntry.getKey() + "', '" + mapEntry.getValue() + "');");
+			}
+			
+			long count = (Long)jsExecutor.executeScript("return window.localStorage.length;");
+			myLogger.debug("Final localStorageItems count: {}", count);
+			return count > 0L;
+		} catch (IOException e) {
+			myLogger.error("Error in loading cookie file", e);
+		} catch (ClassNotFoundException e) {
+			myLogger.error("Error in loading cookie file", e);
+		} finally {
+			try {
+				objInStream.close();
+			} catch (IOException e) {
+				//Do Nothing
+			}
+		}
+		return false;
+	}
+	
+	public static void printLocalStorageItems(WebDriver webDriver) {
+		getLocalStorageItems(webDriver);
 	}
 }
