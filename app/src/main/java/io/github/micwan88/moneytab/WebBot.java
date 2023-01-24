@@ -422,14 +422,14 @@ public class WebBot implements Closeable {
 			
 			driverOptions.add("--disable-gpu");
 			driverOptions.add("--disable-extensions");
-			driverOptions.add("--disable-file-system");
-			driverOptions.add("--disable-media-session-api");
-			driverOptions.add("--disable-shared-workers");
-			driverOptions.add("--disable-threaded-compositing");
-			driverOptions.add("--disable-threaded-scrolling");
-			driverOptions.add("--disable-v8-idle-tasks");
-			driverOptions.add("--disable-volume-adjust-sound");
-			driverOptions.add("--disable-webgl");
+			//driverOptions.add("--disable-file-system");
+			//driverOptions.add("--disable-media-session-api");
+			//driverOptions.add("--disable-shared-workers");
+			//driverOptions.add("--disable-threaded-compositing");
+			//driverOptions.add("--disable-threaded-scrolling");
+			//driverOptions.add("--disable-v8-idle-tasks");
+			//driverOptions.add("--disable-volume-adjust-sound");
+			//driverOptions.add("--disable-webgl");
 			driverOptions.add("--no-default-browser-check");
 			//driverOptions.add("--no-experiments");
 			
