@@ -14,19 +14,18 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Cookie;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeDriverService;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -34,20 +33,22 @@ import io.github.micwan88.helperclass4j.AppPropertiesUtil;
 import io.github.micwan88.moneytab.bean.NotificationItem;
 import io.github.micwan88.moneytab.data.NotificationFilter;
 import io.github.micwan88.moneytab.messaging.TelegramBot;
+import io.github.micwan88.moneytab.selenium.WebDriverMgr;
+import io.github.micwan88.moneytab.selenium.WebDriverMgr.DRIVER_TYPE;
 
 public class WebBot implements Closeable {
 	
 	private static final Logger myLogger = LogManager.getLogger(WebBot.class);
 	
-	private ChromeDriverService chromeDriverService = null;
 	private WebDriver webDriver = null;
 	
 	private Path checksumHistoryPath = Paths.get(WebBotConst.WEBBOT_CHECKSUM_HISTORY_FILENAME); 
 	
 	//App Parameters
+	private DRIVER_TYPE browserType = DRIVER_TYPE.CHROME;
 	private boolean browserHeadlessMode = false;
-	private boolean browserDetachMode = false;
 	private File browserUserData = null;
+	private long waitBeforeQuit = 0L;
 	private long waitTimeout = 5000L;
 	private long sleepTime = 10000L;
 	private String login = "";
@@ -116,9 +117,9 @@ public class WebBot implements Closeable {
 			browserHeadlessMode = true;
 		}
 		
-		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_DETACH_MODE);
-		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
-			browserDetachMode = true;
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_TYPE);
+		if (tempStr != null && tempStr.trim().equalsIgnoreCase(DRIVER_TYPE.FIREFOX.name())) {
+			browserType = DRIVER_TYPE.FIREFOX;
 		}
 		
 		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_USERDATA);
@@ -139,6 +140,11 @@ public class WebBot implements Closeable {
 				myLogger.error("Invalid {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, tempStr);
 				return -1;
 			}
+		}
+		
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_BEFORE_QUIT);
+		if (tempStr != null && !tempStr.trim().isEmpty()) {
+			waitBeforeQuit = parseLong(tempStr); //Can be 'zero'
 		}
 		
 		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_SLEEP_TIME);
@@ -190,9 +196,9 @@ public class WebBot implements Closeable {
 			browserHeadlessMode = true;
 		}
 		
-		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_DETACH_MODE);
-		if (tempStr != null && tempStr.trim().equalsIgnoreCase("true")) {
-			browserDetachMode = true;
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_TYPE);
+		if (tempStr != null && tempStr.trim().equalsIgnoreCase(DRIVER_TYPE.FIREFOX.name())) {
+			browserType = DRIVER_TYPE.FIREFOX;
 		}
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_USERDATA);
@@ -213,6 +219,11 @@ public class WebBot implements Closeable {
 				myLogger.error("Invalid {}: {}", WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, tempStr);
 				return -1;
 			}
+		}
+		
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_BEFORE_QUIT);
+		if (tempStr != null && !tempStr.trim().isEmpty()) {
+			waitBeforeQuit = parseLong(tempStr); //Can be 'zero'
 		}
 		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_SLEEP_TIME);
@@ -260,10 +271,11 @@ public class WebBot implements Closeable {
 	
 	public void debugParams() {
 		myLogger.debug("Debug Params ...");
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_TYPE, browserType);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE, browserHeadlessMode);
-		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_DETACH_MODE, browserDetachMode);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, browserUserData != null ? browserUserData.getAbsolutePath() : null);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, waitTimeout);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_WAIT_BEFORE_QUIT, waitBeforeQuit);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_SLEEP_TIME, sleepTime);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_LOGIN, login);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_PASSWORD, password);
@@ -327,8 +339,6 @@ public class WebBot implements Closeable {
 					}
 				}
 			}
-		} catch (IOException e) {
-			myLogger.error("Chromedriver init error", e);
 		} catch (Exception e) {
 			myLogger.error("Unexpected error", e);
 		} finally {
@@ -340,37 +350,31 @@ public class WebBot implements Closeable {
 			System.exit(-3);
 	}
 	
-	public void init() throws IOException {
-		chromeDriverService = new ChromeDriverService.Builder().usingAnyFreePort().build();
-		chromeDriverService.start();
+	public void init() {
+		WebDriverMgr webDriverMgr = new WebDriverMgr();
+		ArrayList<String> driverOptions = new ArrayList<>();
 		
-		ChromeOptions chromeOptions = new ChromeOptions();
-		//Not sure why we need this when in Linux, may be bug of chromedriver ?
-		chromeOptions.addArguments("--remote-debugging-port=9222");
-		
-		if (browserHeadlessMode)
-			chromeOptions.setHeadless(true);
-		
-		if (browserUserData != null)
-			chromeOptions.addArguments("user-data-dir=" + browserUserData.getAbsolutePath());
-		
-		chromeOptions.addArguments("--disable-gpu");
-		chromeOptions.addArguments("--disable-extensions");
-		chromeOptions.addArguments("--disable-file-system");
-		chromeOptions.addArguments("--disable-media-session-api");
-		chromeOptions.addArguments("--disable-shared-workers");
-		chromeOptions.addArguments("--disable-threaded-compositing");
-		chromeOptions.addArguments("--disable-threaded-scrolling");
-		chromeOptions.addArguments("--disable-v8-idle-tasks");
-		chromeOptions.addArguments("--disable-volume-adjust-sound");
-		chromeOptions.addArguments("--disable-webgl");
-		chromeOptions.addArguments("--no-default-browser-check");
-		//chromeOptions.addArguments("--no-experiments");
-		
-		if (browserDetachMode)
-			chromeOptions.setExperimentalOption("detach", true);
-		
-		webDriver = new ChromeDriver(chromeDriverService, chromeOptions);
+		if (browserType.equals(DRIVER_TYPE.FIREFOX)) {
+			webDriver = webDriverMgr.getWebDriver(DRIVER_TYPE.FIREFOX, browserHeadlessMode, driverOptions);
+		} else {
+			if (browserUserData != null)
+				driverOptions.add("user-data-dir=" + browserUserData.getAbsolutePath());
+			
+			driverOptions.add("--disable-gpu");
+			driverOptions.add("--disable-extensions");
+			driverOptions.add("--disable-file-system");
+			driverOptions.add("--disable-media-session-api");
+			driverOptions.add("--disable-shared-workers");
+			driverOptions.add("--disable-threaded-compositing");
+			driverOptions.add("--disable-threaded-scrolling");
+			driverOptions.add("--disable-v8-idle-tasks");
+			driverOptions.add("--disable-volume-adjust-sound");
+			driverOptions.add("--disable-webgl");
+			driverOptions.add("--no-default-browser-check");
+			//driverOptions.add("--no-experiments");
+			
+			webDriver = webDriverMgr.getWebDriver(DRIVER_TYPE.CHROME, browserHeadlessMode, driverOptions);
+		}
 		
 		//Read the checksum history and convert it to filter
 		readChecksumHistory(checksumHistoryPath);
@@ -378,12 +382,18 @@ public class WebBot implements Closeable {
 
 	@Override
 	public void close() {
-		//Not close brower when run in detach mode
-		if (!browserDetachMode && webDriver != null)
+		if (webDriver != null) {
+			if (waitBeforeQuit != 0L) {
+				try {
+					myLogger.debug("Sleep before quit driver : {}", waitBeforeQuit);
+					Thread.sleep(waitBeforeQuit);
+				} catch (InterruptedException e) {
+					//Do nothing
+				}
+			}
+			
 			webDriver.quit();
-		
-		if (chromeDriverService != null)
-			chromeDriverService.stop();
+		}
 	}
 	
 	public boolean loginMoneyTabWeb(String username, String password) {
@@ -401,7 +411,7 @@ public class WebBot implements Closeable {
 			myLogger.debug("Checking if loginButton here");
 			
 			WebElement loginButton = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
-					.until(driver -> driver.findElement(By.cssSelector("section > div > div > span[role='button']:has(> span)")));
+					.until(driver -> driver.findElement(By.cssSelector("section > div > div > span[role='button']:has(span)")));
 			
 			String buttonTitle = loginButton.getText();
 			if (!buttonTitle.equals("登入")) {
@@ -566,7 +576,7 @@ public class WebBot implements Closeable {
 				WebElement iFrameElement = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
 						.until(driver -> driver.findElement(By.cssSelector("main > section > div + div iframe")));
 				
-				myLogger.debug("iFrameElement found : {} - src {}", iFrameElement.getAccessibleName(), iFrameElement.getAttribute("src"));
+				myLogger.debug("iFrameElement found : {} - src {}", iFrameElement.getTagName(), iFrameElement.getAttribute("src"));
 				
 				myLogger.debug("Switch to iFrameElement ...");
 				webDriver.switchTo().frame(iFrameElement);
@@ -578,7 +588,7 @@ public class WebBot implements Closeable {
 					iFrameElement = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
 							.until(driver -> driver.findElement(By.cssSelector("iframe")));
 					
-					myLogger.debug("iFrameElement found : {} - src {}", iFrameElement.getAccessibleName(), iFrameElement.getAttribute("src"));
+					myLogger.debug("iFrameElement found : {} - src {}", iFrameElement.getTagName(), iFrameElement.getAttribute("src"));
 					
 					myLogger.debug("Switch to iFrameElement ...");
 					webDriver.switchTo().frame(iFrameElement);
@@ -616,6 +626,11 @@ public class WebBot implements Closeable {
 		}
 		
 		return 0;
+	}
+	
+	public void printAllCookies() {
+		Set<Cookie> cookies = webDriver.manage().getCookies();
+		cookies.forEach((cookie) -> myLogger.debug(cookie));
 	}
 	
 	private String constructOutMsg(NotificationItem notificationItem) {
@@ -702,16 +717,16 @@ public class WebBot implements Closeable {
 		return browserHeadlessMode;
 	}
 
+	public DRIVER_TYPE getBrowserType() {
+		return browserType;
+	}
+
+	public void setBrowserType(DRIVER_TYPE browserType) {
+		this.browserType = browserType;
+	}
+
 	public void setBrowserHeadlessMode(boolean browserHeadlessMode) {
 		this.browserHeadlessMode = browserHeadlessMode;
-	}
-
-	public boolean isBrowserDetachMode() {
-		return browserDetachMode;
-	}
-
-	public void setBrowserDetachMode(boolean browserDetachMode) {
-		this.browserDetachMode = browserDetachMode;
 	}
 
 	public File getBrowserUserData() {
@@ -728,6 +743,14 @@ public class WebBot implements Closeable {
 
 	public void setWaitTimeout(long waitTimeout) {
 		this.waitTimeout = waitTimeout;
+	}
+
+	public long getWaitBeforeQuit() {
+		return waitBeforeQuit;
+	}
+
+	public void setWaitBeforeQuit(long waitBeforeQuit) {
+		this.waitBeforeQuit = waitBeforeQuit;
 	}
 
 	public long getSleepTime() {

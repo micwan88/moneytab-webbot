@@ -8,10 +8,11 @@ public class WebBotConst {
 	public static final String WEBBOT_CHECKSUM_HISTORY_FILENAME = "checksum.dat";
 	
 	//APP PROPERTIES KEY
+	public static final String APP_PROPERTIES_BROWSER_TYPE = "moneytab.bot.browserType";
 	public static final String APP_PROPERTIES_BROWSER_HEADLESS_MODE = "moneytab.bot.browserHeadlessMode";
-	public static final String APP_PROPERTIES_BROWSER_DETACH_MODE = "moneytab.bot.browserDetachMode";
-	public static final String APP_PROPERTIES_BROWSER_USERDATA = "moneytab.bot.browserUserData";
+	public static final String APP_PROPERTIES_BROWSER_USERDATA = "moneytab.bot.browserUserData"; //Only for chrome currently
 	public static final String APP_PROPERTIES_BROWSER_WAIT_TIMEOUT = "moneytab.bot.browserWaitTimeout";
+	public static final String APP_PROPERTIES_BROWSER_WAIT_BEFORE_QUIT = "moneytab.bot.browserWaitBeforeQuit";
 
 	public static final String APP_PROPERTIES_SLEEP_TIME = "moneytab.bot.sleepTime";
 	public static final String APP_PROPERTIES_LOGIN = "moneytab.bot.login";

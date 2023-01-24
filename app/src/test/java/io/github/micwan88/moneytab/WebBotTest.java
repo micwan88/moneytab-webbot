@@ -21,6 +21,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 import io.github.micwan88.moneytab.bean.NotificationItem;
 import io.github.micwan88.moneytab.data.NotificationFilter;
+import io.github.micwan88.moneytab.selenium.WebDriverMgr.DRIVER_TYPE;
 
 @TestInstance(Lifecycle.PER_CLASS)
 class WebBotTest {
@@ -30,9 +31,10 @@ class WebBotTest {
 	@BeforeAll void beforeTest() throws IOException {
 		//Hard code test properties
 		Properties appProperties = new Properties();
+		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_TYPE, DRIVER_TYPE.FIREFOX.name());
 		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE, "true");
-		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_DETACH_MODE, "false");
 		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, "8000");
+		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_BEFORE_QUIT, "15000");
 		appProperties.put(WebBotConst.APP_PROPERTIES_SLEEP_TIME, "10000");
 		//Fake username and password
 		appProperties.put(WebBotConst.APP_PROPERTIES_LOGIN, "aaaa");
