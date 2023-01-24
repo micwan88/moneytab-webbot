@@ -11,6 +11,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.Cookie;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriver.Options;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -131,6 +132,27 @@ public class WebDriverMgr {
 			} catch (IOException e) {
 				//Do Nothing
 			}
+		}
+	}
+	
+	public static void printCookies(WebDriver webDriver) {
+		Set<Cookie> cookies = webDriver.manage().getCookies();
+		
+		myLogger.debug("printAllCookies count: {}", cookies.size());
+		
+		cookies.forEach((cookie) -> myLogger.debug("Cookie : {}", cookie));
+	}
+	
+	public static void printLocalStorageItems(WebDriver webDriver) {
+		JavascriptExecutor js = (JavascriptExecutor)webDriver;
+		
+		String key = null;
+		long count = (Long)js.executeScript("return window.localStorage.length;");
+		myLogger.debug("printLocalStorageItems count: {}", count);
+		
+		for (int i=0; i<count; i++) {
+			key = (String)js.executeScript("return window.localStorage.key(" + i + ");");
+			myLogger.debug("{}: {}", key, js.executeScript("return window.localStorage.getItem('" + key + "');"));
 		}
 	}
 }

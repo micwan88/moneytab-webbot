@@ -35,6 +35,9 @@ class WebBotTest {
 		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_HEADLESS_MODE, "true");
 		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, "8000");
 		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_WAIT_BEFORE_QUIT, "15000");
+		//Not to persist any state for each test
+		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_COOKIE, "false");
+		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_LOCAL_STORAGE, "false");
 		appProperties.put(WebBotConst.APP_PROPERTIES_SLEEP_TIME, "10000");
 		//Fake username and password
 		appProperties.put(WebBotConst.APP_PROPERTIES_LOGIN, "aaaa");

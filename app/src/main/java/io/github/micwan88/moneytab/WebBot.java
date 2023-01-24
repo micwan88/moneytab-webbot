@@ -14,15 +14,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Cookie;
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
@@ -48,6 +45,8 @@ public class WebBot implements Closeable {
 	//App Parameters
 	private DRIVER_TYPE browserType = DRIVER_TYPE.CHROME;
 	private boolean browserHeadlessMode = false;
+	private boolean browserPersistCookie = true;
+	private boolean browserPersistLocalStorage = true;
 	private File browserUserData = null;
 	private long waitBeforeQuit = 0L;
 	private long waitTimeout = 5000L;
@@ -148,6 +147,16 @@ public class WebBot implements Closeable {
 			waitBeforeQuit = parseLong(tempStr); //Can be 'zero'
 		}
 		
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_COOKIE);
+		if (tempStr != null && tempStr.trim().equalsIgnoreCase("false")) {
+			browserPersistCookie = false;
+		}
+		
+		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_LOCAL_STORAGE);
+		if (tempStr != null && tempStr.trim().equalsIgnoreCase("false")) {
+			browserPersistLocalStorage = false;
+		}
+		
 		tempStr = appProperties.getProperty(WebBotConst.APP_PROPERTIES_SLEEP_TIME);
 		if (tempStr != null && !tempStr.trim().isEmpty()) {
 			sleepTime = parseLong(tempStr);
@@ -227,6 +236,16 @@ public class WebBot implements Closeable {
 			waitBeforeQuit = parseLong(tempStr); //Can be 'zero'
 		}
 		
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_COOKIE);
+		if (tempStr != null && tempStr.trim().equalsIgnoreCase("false")) {
+			browserPersistCookie = false;
+		}
+		
+		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_LOCAL_STORAGE);
+		if (tempStr != null && tempStr.trim().equalsIgnoreCase("false")) {
+			browserPersistLocalStorage = false;
+		}
+		
 		tempStr = System.getProperty(WebBotConst.APP_PROPERTIES_SLEEP_TIME);
 		if (tempStr != null && !tempStr.trim().isEmpty()) {
 			sleepTime = parseLong(tempStr);
@@ -277,6 +296,8 @@ public class WebBot implements Closeable {
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_USERDATA, browserUserData != null ? browserUserData.getAbsolutePath() : null);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_WAIT_TIMEOUT, waitTimeout);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_WAIT_BEFORE_QUIT, waitBeforeQuit);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_COOKIE, browserPersistCookie);
+		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_BROWSER_PERSIST_LOCAL_STORAGE, browserPersistLocalStorage);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_SLEEP_TIME, sleepTime);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_LOGIN, login);
 		myLogger.debug("AppProp - {}: {}" , WebBotConst.APP_PROPERTIES_PASSWORD, password);
@@ -375,6 +396,14 @@ public class WebBot implements Closeable {
 			//driverOptions.add("--no-experiments");
 			
 			webDriver = webDriverMgr.getWebDriver(DRIVER_TYPE.CHROME, browserHeadlessMode, driverOptions);
+		}
+		
+		if (browserPersistCookie) {
+			
+		}
+		
+		if (browserPersistLocalStorage) {
+			
 		}
 		
 		//Read the checksum history and convert it to filter
@@ -627,24 +656,6 @@ public class WebBot implements Closeable {
 		}
 		
 		return 0;
-	}
-	
-	public void printAllCookies() {
-		Set<Cookie> cookies = webDriver.manage().getCookies();
-		cookies.forEach((cookie) -> myLogger.debug("Cookie : {}", cookie));
-	}
-	
-	public void printLocalStorageItems() {
-		JavascriptExecutor js = (JavascriptExecutor)webDriver;
-		
-		String key = null;
-		long count = (Long)js.executeScript("return window.localStorage.length;");
-		myLogger.debug("printLocalStorageItems count: {}", count);
-		
-		for (int i=0; i<count; i++) {
-			key = (String)js.executeScript("return window.localStorage.key(" + i + ");");
-			myLogger.debug("{}: {}", key, js.executeScript("return window.localStorage.getItem('" + key + "');"));
-		}
 	}
 	
 	private String constructOutMsg(NotificationItem notificationItem) {
