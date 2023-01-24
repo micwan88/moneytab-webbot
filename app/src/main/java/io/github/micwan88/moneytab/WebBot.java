@@ -354,6 +354,19 @@ public class WebBot implements Closeable {
 		if (browserUserData != null)
 			chromeOptions.addArguments("user-data-dir=" + browserUserData.getAbsolutePath());
 		
+		chromeOptions.addArguments("--disable-gpu");
+		chromeOptions.addArguments("--disable-extensions");
+		chromeOptions.addArguments("--disable-file-system");
+		chromeOptions.addArguments("--disable-media-session-api");
+		chromeOptions.addArguments("--disable-shared-workers");
+		chromeOptions.addArguments("--disable-threaded-compositing");
+		chromeOptions.addArguments("--disable-threaded-scrolling");
+		chromeOptions.addArguments("--disable-v8-idle-tasks");
+		chromeOptions.addArguments("--disable-volume-adjust-sound");
+		chromeOptions.addArguments("--disable-webgl");
+		chromeOptions.addArguments("--no-default-browser-check");
+		//chromeOptions.addArguments("--no-experiments");
+		
 		if (browserDetachMode)
 			chromeOptions.setExperimentalOption("detach", true);
 		
