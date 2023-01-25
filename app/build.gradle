@@ -46,6 +46,11 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.1'
 }
 
+compileJava {
+	//Some java source file have chinese characters, so use UTF-8 to compile 
+    options.encoding = 'UTF-8'
+}
+
 application {
     // Define the main class for the application.
     mainClass = 'io.github.micwan88.moneytab.WebBot'
@@ -54,4 +59,14 @@ application {
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+distributions {
+	main {
+		distributionBaseName = rootProject.name
+		//Copy configs to distributions file (zip/tar)
+		contents {
+			from 'conf'
+		}
+	}
 }
