@@ -54,6 +54,7 @@ compileJava {
 application {
     // Define the main class for the application.
     mainClass = 'io.github.micwan88.moneytab.WebBot'
+    applicationName = rootProject.name
 }
 
 tasks.named('test') {
@@ -63,7 +64,6 @@ tasks.named('test') {
 
 distributions {
 	main {
-		distributionBaseName = rootProject.name
 		//Copy configs to distributions file (zip/tar)
 		contents {
 			from 'conf'
