@@ -20,7 +20,6 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
-import org.openqa.selenium.firefox.FirefoxProfile;
 
 public class WebDriverMgr {
 	
@@ -41,14 +40,10 @@ public class WebDriverMgr {
 	}
 	
 	private WebDriver getFirefoxDriver(boolean isHeadlessMode, List<String> driverOptions) {
-		FirefoxProfile firefoxProfile = new FirefoxProfile();
 		FirefoxOptions firefoxOptions = new FirefoxOptions();
 		
 		//Css 'has' selector for firefox need enable 'layout.css.has-selector.enabled'
-		firefoxProfile.setPreference("layout.css.has-selector.enabled", true);
-		firefoxProfile.layoutOnDisk();
-		
-		firefoxOptions.setProfile(firefoxProfile);
+		firefoxOptions.addPreference("layout.css.has-selector.enabled", true);
 		
 		if (isHeadlessMode)
 			firefoxOptions.setHeadless(true);
