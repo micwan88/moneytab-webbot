@@ -19,6 +19,7 @@ import org.openqa.selenium.WebDriver.Options;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxDriverLogLevel;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
 public class WebDriverMgr {
@@ -44,6 +45,9 @@ public class WebDriverMgr {
 		
 		//Css 'has' selector for firefox need enable 'layout.css.has-selector.enabled'
 		firefoxOptions.addPreference("layout.css.has-selector.enabled", true);
+		
+		//Set it for temp debug
+		firefoxOptions.setLogLevel(FirefoxDriverLogLevel.DEBUG);
 		
 		if (isHeadlessMode)
 			firefoxOptions.setHeadless(true);
