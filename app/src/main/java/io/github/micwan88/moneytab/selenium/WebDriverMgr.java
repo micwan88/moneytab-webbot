@@ -47,7 +47,7 @@ public class WebDriverMgr {
 		firefoxOptions.addPreference("layout.css.has-selector.enabled", true);
 		
 		//Set it for temp debug
-		firefoxOptions.setLogLevel(FirefoxDriverLogLevel.DEBUG);
+		//firefoxOptions.setLogLevel(FirefoxDriverLogLevel.DEBUG);
 		
 		if (isHeadlessMode)
 			firefoxOptions.setHeadless(true);
