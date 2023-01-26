@@ -420,8 +420,11 @@ public class WebBot implements Closeable {
 						if (returnCode == 0)
 							returnCode = webBot.saveChecksumHistory(webBot.getChecksumHistoryPath(), notificationItemList);
 						
-						webBot.persistCookies();
+						//Try load home again before save stated to file
+						webBot.loadMoneyTabWebHome();
 						
+						//Persist browser state
+						webBot.persistCookies();
 						webBot.persistLocalStorageItems();
 					}
 				}
@@ -491,6 +494,22 @@ public class WebBot implements Closeable {
 			
 			webDriver.quit();
 		}
+	}
+	
+	public boolean loadMoneyTabWebHome() {
+		myLogger.debug("Start loadMoneyTabWebHome");
+		
+		String targetURL = "https://www.money-tab.com";
+		myLogger.debug("Target URL: {}", targetURL);
+		
+		try {
+			webDriver.get(targetURL);
+		} catch (Exception e) {
+			myLogger.error("Unexpected error", e);
+		} finally {
+			myLogger.debug("End loadMoneyTabWebHome");
+		}
+		return false;
 	}
 	
 	public boolean loginMoneyTabWeb(String username, String password) {
