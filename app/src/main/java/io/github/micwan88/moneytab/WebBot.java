@@ -118,13 +118,39 @@ public class WebBot implements Closeable {
 		myLogger.debug("End persistCookies");
 	}
 	
-	public void persistLocalstorageItems() {
-		myLogger.debug("Start persistLocalstorageItems");
+	public void persistLocalStorageItems() {
+		myLogger.debug("Start persistLocalStorageItems");
 		if (browserPersistLocalStorage) {
 			HashMap<String, String> localStorageItemsMap = WebDriverMgr.getLocalStorageItems(webDriver);
 			WebDriverMgr.saveLocalStorageItems(Paths.get(WebBotConst.WEBBOT_LOCALSTORAGE_DATA_FILENAME), localStorageItemsMap);
 		}
-		myLogger.debug("End persistLocalstorageItems");
+		myLogger.debug("End persistLocalStorageItems");
+	}
+	
+	public void clearPersistCookiesFile() {
+		myLogger.debug("Start clearPersistCookiesFile");
+		if (browserPersistCookie) {
+			Path targetFilePath = Paths.get(WebBotConst.WEBBOT_COOKIE_DATA_FILENAME);
+			try {
+				Files.deleteIfExists(targetFilePath);
+			} catch (IOException e) {
+				myLogger.error("Cannot delete cookie file: {}", targetFilePath.toAbsolutePath(), e);
+			}
+		}
+		myLogger.debug("End clearPersistCookiesFile");
+	}
+	
+	public void clearPersistLocalStorageFile() {
+		myLogger.debug("Start clearPersistLocalStorageFile");
+		if (browserPersistLocalStorage) {
+			Path targetFilePath = Paths.get(WebBotConst.WEBBOT_LOCALSTORAGE_DATA_FILENAME);
+			try {
+				Files.deleteIfExists(targetFilePath);
+			} catch (IOException e) {
+				myLogger.error("Cannot delete local storage file: {}", targetFilePath.toAbsolutePath(), e);
+			}
+		}
+		myLogger.debug("End clearPersistLocalStorageFile");
 	}
 	
 	public int loadAppParameters(Properties appProperties) {
@@ -351,6 +377,7 @@ public class WebBot implements Closeable {
 			System.exit(-1);
 		}
 		
+		boolean needClearBrowserState = false;
 		WebBot webBot = new WebBot();
 		
 		int returnCode = webBot.loadAppParameters(appProperties);
@@ -395,15 +422,25 @@ public class WebBot implements Closeable {
 						
 						webBot.persistCookies();
 						
-						webBot.persistLocalstorageItems();
+						webBot.persistLocalStorageItems();
 					}
 				}
 			}
+			
+			if (!result || returnCode != 0)
+				needClearBrowserState = true;
 		} catch (Exception e) {
 			myLogger.error("Unexpected error", e);
+			needClearBrowserState = true;
 		} finally {
 			webBot.close();
 			myLogger.debug("WebBot End");
+		}
+		
+		//When something weird happen, just clear cookie/local storage file
+		if (needClearBrowserState) {
+			webBot.clearPersistCookiesFile();
+			webBot.clearPersistLocalStorageFile();
 		}
 		
 		if (returnCode != 0)
