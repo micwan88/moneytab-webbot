@@ -672,9 +672,6 @@ public class WebBot implements Closeable {
 		myLogger.debug("Start populateYoutubeLink");
 		
 		try {
-			if (!checkIfAlreadyLogon())
-				return -1;
-			
 			for (NotificationItem notificationItem : notificationItemList) {
 				//Skip if non video item
 				if (notificationItem.getPageLink() == null)
@@ -684,6 +681,10 @@ public class WebBot implements Closeable {
 				myLogger.debug("Target URL: {}", targetURL);
 				
 				webDriver.get(targetURL);
+				
+				//Try check if logon profile to ensure page loaded fully
+				if (!checkIfAlreadyLogon())
+					return -1;
 				
 				//Need time to load, so need wait
 				WebElement iFrameElement = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
