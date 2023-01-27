@@ -204,7 +204,7 @@ public class WebDriverMgr {
 			for (Entry<String, String> mapEntry : localStorageMap.entrySet()) {
 				myLogger.debug("Read localStorageItem: Key {}, Value {}", mapEntry.getKey(), mapEntry.getValue());
 				
-				jsExecutor.executeScript("return window.localStorage.setItem('" + mapEntry.getKey() + "', '" + mapEntry.getValue().replaceAll("\\", "\\\\") + "');");
+				jsExecutor.executeScript("return window.localStorage.setItem('" + mapEntry.getKey() + "', '" + mapEntry.getValue().replaceAll("\\\\", "\\\\\\\\") + "');");
 			}
 			
 			long count = (Long)jsExecutor.executeScript("return window.localStorage.length;");
