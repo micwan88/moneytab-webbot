@@ -392,6 +392,9 @@ public class WebBot implements Closeable {
 		try {
 			webBot.init();
 			
+			//Load previous state if necessary
+			webBot.loadPreviousBrowserState();
+			
 			boolean result = webBot.loginMoneyTabWeb(webBot.getLogin(), webBot.getPassword());
 			
 			//If logon success
@@ -512,6 +515,24 @@ public class WebBot implements Closeable {
 		return false;
 	}
 	
+	public void loadPreviousBrowserState() {
+		myLogger.debug("Start loadPreviousBrowserState");
+		
+		if (browserPersistCookie | browserPersistLocalStorage) {
+			loadMoneyTabWebHome();
+			
+			if (browserPersistCookie) {
+				WebDriverMgr.loadCookie(Paths.get(WebBotConst.WEBBOT_COOKIE_DATA_FILENAME), webDriver);
+			}
+			
+			if (browserPersistLocalStorage) {
+				WebDriverMgr.loadLocalStorageItems(Paths.get(WebBotConst.WEBBOT_LOCALSTORAGE_DATA_FILENAME), webDriver);
+			}
+		}
+		
+		myLogger.debug("End loadPreviousBrowserState");
+	}
+	
 	public boolean loginMoneyTabWeb(String username, String password) {
 		myLogger.debug("Start loginMoneyTabWeb");
 		
@@ -520,22 +541,6 @@ public class WebBot implements Closeable {
 		
 		try {
 			webDriver.get(targetURL);
-			
-			boolean loadedCookies = false;
-			boolean loadedLocalStorageItems = false;
-			
-			if (browserPersistCookie) {
-				loadedCookies = WebDriverMgr.loadCookie(Paths.get(WebBotConst.WEBBOT_COOKIE_DATA_FILENAME), webDriver);
-			}
-			
-			if (browserPersistLocalStorage) {
-				loadedLocalStorageItems = WebDriverMgr.loadLocalStorageItems(Paths.get(WebBotConst.WEBBOT_LOCALSTORAGE_DATA_FILENAME), webDriver);
-			}
-			
-			//If either loaded cookies / local storage items, reload the page
-			if (loadedCookies || loadedLocalStorageItems) {
-				webDriver.get(targetURL);
-			}
 			
 			if (checkIfAlreadyLogon())
 				return true;

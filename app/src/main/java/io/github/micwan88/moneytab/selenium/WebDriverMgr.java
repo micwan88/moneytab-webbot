@@ -204,16 +204,18 @@ public class WebDriverMgr {
 			for (Entry<String, String> mapEntry : localStorageMap.entrySet()) {
 				myLogger.debug("Read localStorageItem: Key {}, Value {}", mapEntry.getKey(), mapEntry.getValue());
 				
-				jsExecutor.executeScript("return window.localStorage.setItem('" + mapEntry.getKey() + "', '" + mapEntry.getValue() + "');");
+				jsExecutor.executeScript("return window.localStorage.setItem('" + mapEntry.getKey() + "', '" + mapEntry.getValue().replaceAll("\\", "\\\\") + "');");
 			}
 			
 			long count = (Long)jsExecutor.executeScript("return window.localStorage.length;");
 			myLogger.debug("Final localStorageItems count: {}", count);
 			return count > 0L;
 		} catch (IOException e) {
-			myLogger.error("Error in loading cookie file", e);
+			myLogger.error("Error in loading localStorageItems file", e);
 		} catch (ClassNotFoundException e) {
-			myLogger.error("Error in loading cookie file", e);
+			myLogger.error("Error in loading localStorageItems file", e);
+		} catch (Exception e) {
+			myLogger.error("Error in loading localStorageItems file", e);
 		} finally {
 			try {
 				objInStream.close();
