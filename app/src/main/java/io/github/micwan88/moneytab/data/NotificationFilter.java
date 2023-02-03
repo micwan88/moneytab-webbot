@@ -59,7 +59,7 @@ public class NotificationFilter {
 	}
 	
 	public boolean filterChecksum(NotificationItem notificationItem) {
-		boolean result = isBlackListFilter ^ filterItemSet.contains(notificationItem.getFullDescriptionChecksum());
+		boolean result = isBlackListFilter ^ filterItemSet.contains(notificationItem.getChecksum());
 		return result;
 	}
 

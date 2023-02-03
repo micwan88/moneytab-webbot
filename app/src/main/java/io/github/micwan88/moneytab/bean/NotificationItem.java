@@ -13,7 +13,7 @@ public class NotificationItem {
 	
 	private String videoLink = null;
 	
-	private String fullDescriptionChecksum = null;
+	private String checksum = null;
 
 	public String getType() {
 		return type;
@@ -63,12 +63,12 @@ public class NotificationItem {
 		this.videoLink = videoLink;
 	}
 
-	public String getFullDescriptionChecksum() {
-		return fullDescriptionChecksum;
+	public String getChecksum() {
+		return checksum;
 	}
 
-	public void setFullDescriptionChecksum(String fullDescriptionChecksum) {
-		this.fullDescriptionChecksum = fullDescriptionChecksum;
+	public void setChecksum(String checksum) {
+		this.checksum = checksum;
 	}
 
 	public NotificationItem() {
@@ -91,6 +91,6 @@ public class NotificationItem {
 	public String toString() {
 		return "NotificationItem [type=" + type + ",dateInString=" + dateInString + ",title=" + title
 				+ ",fullDescription=" + fullDescription + ",pageLink=" + pageLink + ",videoLink=" + videoLink
-				+ ",fullDescriptionChecksum=" + fullDescriptionChecksum + "]";
+				+ ",checksum=" + checksum + "]";
 	}
 }

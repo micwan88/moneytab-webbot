@@ -95,7 +95,7 @@ public class WebBot implements Closeable {
 				if (!isFirstItem)
 					bw.newLine();
 				
-				bw.write(notificationItem.getFullDescriptionChecksum());
+				bw.write(notificationItem.getChecksum());
 				isFirstItem = false;
 				count++;
 			}
@@ -648,7 +648,7 @@ public class WebBot implements Closeable {
 					notificationItem.setFullDescription(notificationLinkElement.getText().trim());
 					notificationItem.setPageLink(notificationLinkElement.getAttribute("href").trim());
 					
-					notificationItem.setFullDescriptionChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
+					notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
 				} else {
 					//No link if just news notification
 					notificationNoLinkDivElement = notificationItemElement.findElement(By.cssSelector("div + div"));
@@ -660,7 +660,7 @@ public class WebBot implements Closeable {
 					notificationItem.setTitle(notificationTitleElement.getText().trim());
 					notificationItem.setFullDescription(notificationNoLinkDivElement.getText().trim());
 					
-					notificationItem.setFullDescriptionChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
+					notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
 				}
 				
 				if (notifyDateFilter != null && !notifyDateFilter.filterDate(notificationItem)) {
