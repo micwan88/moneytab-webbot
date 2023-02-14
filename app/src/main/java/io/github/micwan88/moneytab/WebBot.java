@@ -430,6 +430,8 @@ public class WebBot implements Closeable {
 						webBot.persistCookies();
 						webBot.persistLocalStorageItems();
 					}
+				} else {
+					returnCode = -999;
 				}
 			}
 			
