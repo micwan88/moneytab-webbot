@@ -14,6 +14,9 @@ public class NotificationItem {
 	private String videoLink = null;
 	
 	private String checksum = null;
+	
+	//By default set it to true
+	private boolean isSent = true;
 
 	public String getType() {
 		return type;
@@ -71,6 +74,14 @@ public class NotificationItem {
 		this.checksum = checksum;
 	}
 
+	public boolean isSent() {
+		return isSent;
+	}
+
+	public void setSent(boolean isSent) {
+		this.isSent = isSent;
+	}
+
 	public NotificationItem() {
 	}
 
@@ -89,8 +100,8 @@ public class NotificationItem {
 
 	@Override
 	public String toString() {
-		return "NotificationItem [type=" + type + ",dateInString=" + dateInString + ",title=" + title
-				+ ",fullDescription=" + fullDescription + ",pageLink=" + pageLink + ",videoLink=" + videoLink
-				+ ",checksum=" + checksum + "]";
+		return "NotificationItem [type=" + type + ", dateInString=" + dateInString + ", title=" + title
+				+ ", fullDescription=" + fullDescription + ", pageLink=" + pageLink + ", videoLink=" + videoLink
+				+ ", checksum=" + checksum + ", isSent=" + isSent + "]";
 	}
 }

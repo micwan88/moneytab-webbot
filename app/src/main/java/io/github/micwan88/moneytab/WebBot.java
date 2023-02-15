@@ -410,6 +410,9 @@ public class WebBot implements Closeable {
 							return webBot.getChecksumFilter().filterChecksum(notificationItem);
 					}).collect(Collectors.toList());
 					
+					//Mark items not yet sent
+					outNotificationItems.forEach((notificationItem) -> notificationItem.setSent(false));
+					
 					myLogger.debug("Filtered by checksum outNotificationItems.size : {}", outNotificationItems.size());
 					
 					//Extract YouTube link
