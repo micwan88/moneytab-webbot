@@ -42,7 +42,7 @@ RUN wget https://services.gradle.org/distributions/gradle-8.0-bin.zip && unzip g
 RUN wget https://dlcdn.apache.org/maven/maven-3/3.9.0/binaries/apache-maven-3.9.0-bin.tar.gz && tar -zxvf apache-maven-3.9.0-bin.tar.gz
 
 # install firefox
-RUN apt-get install -y firefox/jammy \
+RUN apt-get update && apt-get install -y firefox/jammy \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& apt-get clean
 
