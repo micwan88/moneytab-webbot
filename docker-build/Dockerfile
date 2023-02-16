@@ -16,7 +16,7 @@ LABEL maintainer="Michael Wan"
 VOLUME ${EXTDIR}
 
 # init directories it if not exist
-RUN mkdir -p ${EXTDIR} && \
+RUN mkdir -p ${EXTDIR} \
     && mkdir -p ${WORKDIR} \
     && mkdir -p ${TOOLSDIR} \
     && mkdir -p ${GRADLE_HOME} \
@@ -24,7 +24,7 @@ RUN mkdir -p ${EXTDIR} && \
     && mkdir -p ${M2_HOME}
 
 # install some common tools
-RUN apt-get update && apt-get install -y locales net-tools iputils-ping openjdk-8-jdk unzip git wget vim \
+RUN apt-get update && apt-get install -y locales net-tools iputils-ping openjdk-8-jdk unzip git wget vim software-properties-common \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& apt-get clean
 
@@ -35,6 +35,12 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
+# Set timezone noninteractive
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -yq tzdata && \
+    ln -fs /usr/share/zoneinfo/Asia/Hong_Kong /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
 # change to tools directory and download required build tools
 WORKDIR ${TOOLSDIR}
 
@@ -44,8 +50,12 @@ RUN wget https://services.gradle.org/distributions/gradle-8.0-bin.zip && unzip g
 # download maven 3.9.0
 RUN wget https://dlcdn.apache.org/maven/maven-3/3.9.0/binaries/apache-maven-3.9.0-bin.tar.gz && tar -zxvf apache-maven-3.9.0-bin.tar.gz
 
+# set mozilla repos as firefox store instead of snap
+RUN add-apt-repository -y ppa:mozillateam/ppa \
+    && echo "\nPackage: * \nPin: release o=LP-PPA-mozillateam \nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
+
 # install firefox
-RUN apt-get update && apt-get install -y firefox/jammy \
+RUN apt-get update && apt-get install -y firefox \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& apt-get clean
 
@@ -58,4 +68,4 @@ COPY deploy-webbot.sh ${WORKDIR}
 RUN ./deploy-webbot.sh
 
 # set docker image entry point
-CMD ["/bin/bash"]
+CMD ["./runWebbot.sh"]
