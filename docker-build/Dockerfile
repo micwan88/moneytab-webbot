@@ -55,7 +55,7 @@ RUN git clone https://github.com/micwan88/moneytab-webbot.git
 WORKDIR ${EXTDIR}/moneytab-webbot
 
 # build
-RUN gradle clean build -x test \
+RUN cd money-webbot && gradle clean build -x test \
     && gradle --stop \
     && cp app/build/distributions/moneytab-webbot-${WEBBOT_VERSION}.zip ${EXTDIR}/
 
