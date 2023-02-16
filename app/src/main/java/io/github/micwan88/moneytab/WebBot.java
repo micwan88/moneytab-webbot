@@ -420,7 +420,7 @@ public class WebBot implements Closeable {
 						if (webBot.getChecksumFilter() != null && !webBot.getChecksumFilter().filterChecksum(notificationItem)) {
 							notificationItem.setSent(true);
 							
-							myLogger.debug("Filtered by checksum (already sent): ", notificationItem);
+							myLogger.debug("Filtered by checksum (already sent): {}", notificationItem);
 						}
 					});
 					
