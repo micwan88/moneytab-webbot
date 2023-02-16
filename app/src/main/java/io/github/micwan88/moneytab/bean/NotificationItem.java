@@ -15,8 +15,8 @@ public class NotificationItem {
 	
 	private String checksum = null;
 	
-	//By default set it to true
-	private boolean isSent = true;
+	private boolean isSent = false;
+	private boolean gotError = false;
 
 	public String getType() {
 		return type;
@@ -82,6 +82,14 @@ public class NotificationItem {
 		this.isSent = isSent;
 	}
 
+	public boolean isGotError() {
+		return gotError;
+	}
+
+	public void setGotError(boolean gotError) {
+		this.gotError = gotError;
+	}
+
 	public NotificationItem() {
 	}
 
@@ -102,6 +110,6 @@ public class NotificationItem {
 	public String toString() {
 		return "NotificationItem [type=" + type + ", dateInString=" + dateInString + ", title=" + title
 				+ ", fullDescription=" + fullDescription + ", pageLink=" + pageLink + ", videoLink=" + videoLink
-				+ ", checksum=" + checksum + ", isSent=" + isSent + "]";
+				+ ", checksum=" + checksum + ", isSent=" + isSent + ", gotError=" + gotError + "]";
 	}
 }

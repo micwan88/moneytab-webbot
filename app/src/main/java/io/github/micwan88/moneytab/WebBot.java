@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
@@ -92,6 +91,10 @@ public class WebBot implements Closeable {
 			boolean isFirstItem = true;
 			int count = 0;
 			for (NotificationItem notificationItem : notificationItemList) {
+				//Only save checksum when sent
+				if (!notificationItem.isSent())
+					continue;
+				
 				if (!isFirstItem)
 					bw.newLine();
 				
@@ -377,8 +380,8 @@ public class WebBot implements Closeable {
 			System.exit(-1);
 		}
 		
-		boolean needClearBrowserState = false;
 		WebBot webBot = new WebBot();
+		boolean noError = true;
 		
 		int returnCode = webBot.loadAppParameters(appProperties);
 		
@@ -395,67 +398,66 @@ public class WebBot implements Closeable {
 			//Load previous state if necessary
 			webBot.loadPreviousBrowserState();
 			
-			boolean result = webBot.loginMoneyTabWeb(webBot.getLogin(), webBot.getPassword());
+			noError = webBot.loginMoneyTabWeb(webBot.getLogin(), webBot.getPassword());
 			
 			//If logon success
-			if (result) {
+			if (noError) {
 				List<NotificationItem> notificationItemList = webBot.extractNotificationList(webBot.getDateFilter(), webBot.getTitleFilter());
 				
 				if (notificationItemList != null) {
-					//Filter by checksum
-					List<NotificationItem> outNotificationItems = notificationItemList.stream().filter((notificationItem) -> {
-						if (webBot.getChecksumFilter() == null)
-							return true;
-						else
-							return webBot.getChecksumFilter().filterChecksum(notificationItem);
-					}).collect(Collectors.toList());
-					
-					//Mark items not yet sent
-					outNotificationItems.forEach((notificationItem) -> notificationItem.setSent(false));
-					
-					myLogger.debug("Filtered by checksum outNotificationItems.size : {}", outNotificationItems.size());
-					
 					//Extract YouTube link
-					returnCode = webBot.populateYoutubeLink(outNotificationItems);
-					
-					if (returnCode == 0) {
-						//Send TG msg
-						returnCode = webBot.sendTelegramNotification(outNotificationItems, webBot.getTgBotToken(), webBot.getTgBotChatID());
-						
-						//Save the checksum for next run to prevent duplicate sending
-						if (returnCode == 0)
-							returnCode = webBot.saveChecksumHistory(webBot.getChecksumHistoryPath(), notificationItemList);
-						
-						//Try load home again before save stated to file
-						webBot.loadMoneyTabWebHome();
-						
-						//Persist browser state
-						webBot.persistCookies();
-						webBot.persistLocalStorageItems();
+					if (webBot.populateYoutubeLink(notificationItemList) != 0) {
+						//When error while getting video link, still continue
+						noError = false;
 					}
+					
+					//Populate checksum here
+					
+					//Marked sent by checksum
+					notificationItemList.stream().forEach((notificationItem) -> {
+						if (webBot.getChecksumFilter() != null && !webBot.getChecksumFilter().filterChecksum(notificationItem)) {
+							notificationItem.setSent(true);
+						}
+					});
+					
+					//Get outgoing list by filter sent and error
+					List<NotificationItem> outNotificationItems = notificationItemList.stream().filter((notificationItem)
+							-> (!(notificationItem.isSent() || notificationItem.isGotError()))).collect(Collectors.toList());
+					
+					myLogger.debug("Outgoing outNotificationItems.size : {}", outNotificationItems.size());
+					
+					//Send TG msg, skip with gotError and mark sent afterward
+					returnCode = webBot.sendTelegramNotification(outNotificationItems, webBot.getTgBotToken(), webBot.getTgBotChatID());
+					
+					//Save the checksum for next run to prevent duplicate sending (use full list with isSent)
+					if (returnCode == 0)
+						returnCode = webBot.saveChecksumHistory(webBot.getChecksumHistoryPath(), notificationItemList);
+					
+					//Try load home again before save stated to file
+					webBot.loadMoneyTabWebHome();
+					
+					//Persist browser state
+					webBot.persistCookies();
+					webBot.persistLocalStorageItems();
 				} else {
-					returnCode = -999;
+					noError = false;
 				}
 			}
-			
-			if (!result || returnCode != 0)
-				needClearBrowserState = true;
 		} catch (Exception e) {
 			myLogger.error("Unexpected error", e);
-			needClearBrowserState = true;
+			noError = false;
 		} finally {
 			webBot.close();
 			myLogger.debug("WebBot End");
 		}
 		
 		//When something weird happen, just clear cookie/local storage file
-		if (needClearBrowserState) {
+		if (!noError || returnCode != 0) {
 			webBot.clearPersistCookiesFile();
 			webBot.clearPersistLocalStorageFile();
-		}
-		
-		if (returnCode != 0)
+			
 			System.exit(-3);
+		}	
 	}
 	
 	public void init() {
@@ -653,7 +655,8 @@ public class WebBot implements Closeable {
 					notificationItem.setFullDescription(notificationLinkElement.getText().trim());
 					notificationItem.setPageLink(notificationLinkElement.getAttribute("href").trim());
 					
-					notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
+					//Delay the checksum after got video link
+					//notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
 				} else {
 					//No link if just news notification
 					notificationNoLinkDivElement = notificationItemElement.findElement(By.cssSelector("div + div"));
@@ -665,7 +668,8 @@ public class WebBot implements Closeable {
 					notificationItem.setTitle(notificationTitleElement.getText().trim());
 					notificationItem.setFullDescription(notificationNoLinkDivElement.getText().trim());
 					
-					notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
+					//Delay the checksum after got video link
+					//notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
 				}
 				
 				if (notifyDateFilter != null && !notifyDateFilter.filterDate(notificationItem)) {
@@ -700,20 +704,25 @@ public class WebBot implements Closeable {
 	public int populateYoutubeLink(List<NotificationItem> notificationItemList) {
 		myLogger.debug("Start populateYoutubeLink");
 		
-		try {
-			for (NotificationItem notificationItem : notificationItemList) {
-				//Skip if non video item
-				if (notificationItem.getPageLink() == null)
-					continue;
-				
+		boolean gotAnyError = false;
+		for (NotificationItem notificationItem : notificationItemList) {
+			//Skip if non video item
+			if (notificationItem.getPageLink() == null)
+				continue;
+			
+			try {
 				String targetURL = notificationItem.getPageLink();
 				myLogger.debug("Target URL: {}", targetURL);
 				
 				webDriver.get(targetURL);
 				
 				//Try check if logon profile to ensure page loaded fully
-				if (!checkIfAlreadyLogon())
-					return -1;
+				if (!checkIfAlreadyLogon()) {
+					notificationItem.setGotError(true);
+					myLogger.warn("Mark notification item has error: {}", notificationItem);
+					gotAnyError = true;
+					continue;
+				}
 				
 				//Need time to load, so need wait
 				WebElement iFrameElement = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
@@ -738,23 +747,27 @@ public class WebBot implements Closeable {
 					
 					youTubeLink = tryExtractYoutubeLink();
 					if (youTubeLink == null) {
+						notificationItem.setGotError(true);
 						myLogger.error("Still cannot find the youtube link item from : {}", notificationItem);
-						return -2;
+						gotAnyError = true;
+						continue;
 					}
 				}
 				
 				notificationItem.setVideoLink(youTubeLink);
+			} catch (NoSuchElementException e) {
+				notificationItem.setGotError(true);
+				myLogger.error("Cannot find related element in : " + webDriver.getTitle(), e);
+				gotAnyError = true;
+			} catch (Exception e) {
+				notificationItem.setGotError(true);
+				myLogger.error("Unexpected error", e);
+				gotAnyError = true;
 			}
-			
-			return 0;
-		} catch (NoSuchElementException e) {
-			myLogger.error("Cannot find related element in : " + webDriver.getTitle(), e);
-		} catch (Exception e) {
-			myLogger.error("Unexpected error", e);
-		} finally {
-			myLogger.debug("End populateYoutubeLink");
 		}
-		return -3;
+		
+		myLogger.debug("End populateYoutubeLink");
+		return gotAnyError?-1:0;
 	}
 	
 	public int sendTelegramNotification(List<NotificationItem> notificationItemList, String tgBotToken, String tgBotChatID) {
@@ -762,10 +775,18 @@ public class WebBot implements Closeable {
 		
 		int returnCode = 0;
 		for (NotificationItem notificationItem : notificationItemList) {
+			//Skip notification if cannot get video link
+			if (notificationItem.isGotError())
+				continue;
+			
+			//Suppose can sent all without error, otherwise, just stop whole bot
 			returnCode = telegramBot.postNotifications(constructOutMsg(notificationItem), tgBotChatID);
 			
 			if (returnCode != 0)
 				return returnCode;
+			
+			//Mark sent
+			notificationItem.setSent(true);
 		}
 		
 		return 0;
