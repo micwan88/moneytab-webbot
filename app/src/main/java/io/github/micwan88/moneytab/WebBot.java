@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
@@ -412,11 +413,14 @@ public class WebBot implements Closeable {
 					}
 					
 					//Populate checksum here
+					webBot.populateChecksum(notificationItemList);
 					
 					//Marked sent by checksum
 					notificationItemList.stream().forEach((notificationItem) -> {
 						if (webBot.getChecksumFilter() != null && !webBot.getChecksumFilter().filterChecksum(notificationItem)) {
 							notificationItem.setSent(true);
+							
+							myLogger.debug("Filtered by checksum (already sent): ", notificationItem);
 						}
 					});
 					
@@ -699,6 +703,25 @@ public class WebBot implements Closeable {
 			myLogger.debug("End extractNotificationList");
 		}
 		return null;
+	}
+	
+	public void populateChecksum(List<NotificationItem> notificationItemList) {
+		myLogger.debug("Start populateChecksum");
+		
+		for (NotificationItem notificationItem : notificationItemList) {
+			//Skip any item which cannot get video link
+			if (notificationItem.isGotError())
+				continue;
+			
+			if (notificationItem.getPageLink() == null) {
+				notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
+			} else {
+				//Include link for the checksum
+				notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription() + notificationItem.getVideoLink()));
+			}
+		}
+		
+		myLogger.debug("End populateChecksum");
 	}
 	
 	public int populateYoutubeLink(List<NotificationItem> notificationItemList) {
