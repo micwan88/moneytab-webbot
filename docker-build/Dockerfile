@@ -56,6 +56,7 @@ WORKDIR ${EXTDIR}/moneytab-webbot
 
 # build
 RUN gradle clean build -x test \
+    && gradle --stop \
     && cp app/build/distributions/moneytab-webbot-${WEBBOT_VERSION}.zip ${EXTDIR}/
 
 WORKDIR ${EXTDIR}
