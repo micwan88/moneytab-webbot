@@ -61,7 +61,7 @@ distributions {
 	main {
 		//Copy configs to distributions file (zip/tar)
 		contents {
-			from 'conf'
+			from('conf', 'scripts')
 		}
 	}
 }
@@ -71,6 +71,5 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
-startScripts {
-	classpath = files('lib/*')
-}
+//Disable default script generation
+startScripts.enabled = false

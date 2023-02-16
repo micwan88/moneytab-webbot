@@ -61,7 +61,12 @@ RUN gradle clean build -x test \
 
 WORKDIR ${EXTDIR}
 
-RUN unzip moneytab-webbot-${WEBBOT_VERSION}.zip
+# unzip artifact and setup execute env
+RUN unzip moneytab-webbot-${WEBBOT_VERSION}.zip \
+    && ln -s moneytab-webbot-${WEBBOT_VERSION}/lib lib \
+    && cp moneytab-webbot-${WEBBOT_VERSION}/*.sh . \
+    && cp moneytab-webbot-${WEBBOT_VERSION}/app.properties . \
+    && cp moneytab-webbot-${WEBBOT_VERSION}/log4j2.xml .
 
 # set docker image entry point
 CMD ["/bin/bash"]
