@@ -1,8 +1,8 @@
 FROM ubuntu:22.04
 
-ENV WEBBOT_VERSION=1.0.0-SNAPSHOT
 ENV USER_HOME=/root
 ENV EXTDIR=/media
+ENV WORKDIR=${EXTDIR}/moneytab
 ENV TOOLSDIR=/opt
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 ENV GRADLE_HOME=${TOOLSDIR}/gradle-8.0
@@ -16,12 +16,12 @@ LABEL maintainer="Michael Wan"
 VOLUME ${EXTDIR}
 
 # init directories it if not exist
-RUN mkdir -p ${EXTDIR} && mkdir -p ${TOOLSDIR} \
+RUN mkdir -p ${EXTDIR} && \
+    && mkdir -p ${WORKDIR} \
+    && mkdir -p ${TOOLSDIR} \
     && mkdir -p ${GRADLE_HOME} \
     && mkdir -p ${GRADLE_USER_HOME} \
     && mkdir -p ${M2_HOME}
-
-WORKDIR ${TOOLSDIR}
 
 # install some common tools
 RUN apt-get update && apt-get install -y locales net-tools iputils-ping openjdk-8-jdk unzip git wget vim \
@@ -35,6 +35,9 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
+# change to tools directory and download required build tools
+WORKDIR ${TOOLSDIR}
+
 # download gradle 8.0
 RUN wget https://services.gradle.org/distributions/gradle-8.0-bin.zip && unzip gradle-8.0-bin.zip
 
@@ -46,27 +49,13 @@ RUN apt-get update && apt-get install -y firefox/jammy \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& apt-get clean
 
-# change to target folder
-WORKDIR ${EXTDIR}
+# change to working folder
+WORKDIR ${WORKDIR}
 
-# getting source
-RUN git clone https://github.com/micwan88/moneytab-webbot.git
+COPY deploy-webbot.sh ${WORKDIR}
 
-WORKDIR ${EXTDIR}/moneytab-webbot
-
-# build
-RUN cd money-webbot && gradle clean build -x test \
-    && gradle --stop \
-    && cp app/build/distributions/moneytab-webbot-${WEBBOT_VERSION}.zip ${EXTDIR}/
-
-WORKDIR ${EXTDIR}
-
-# unzip artifact and setup execute env
-RUN unzip moneytab-webbot-${WEBBOT_VERSION}.zip \
-    && ln -s moneytab-webbot-${WEBBOT_VERSION}/lib lib \
-    && cp moneytab-webbot-${WEBBOT_VERSION}/*.sh . \
-    && cp moneytab-webbot-${WEBBOT_VERSION}/app.properties . \
-    && cp moneytab-webbot-${WEBBOT_VERSION}/log4j2.xml .
+# build and deploy
+RUN ./deploy-webbot.sh
 
 # set docker image entry point
 CMD ["/bin/bash"]
