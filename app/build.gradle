@@ -61,7 +61,9 @@ distributions {
 	main {
 		//Copy configs to distributions file (zip/tar)
 		contents {
-			from 'conf'
+			from('conf') {
+                into('conf')
+            }
 		}
 	}
 }
@@ -72,5 +74,5 @@ tasks.named('test') {
 }
 
 startScripts {
-	classpath = files('lib/*')
+	classpath = files('lib/*', 'conf')
 }
