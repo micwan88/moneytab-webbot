@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -25,10 +27,14 @@ import io.github.micwan88.moneytab.selenium.WebDriverMgr.DRIVER_TYPE;
 
 @TestInstance(Lifecycle.PER_CLASS)
 class WebBotTest {
+	static final Logger myLogger = LogManager.getLogger(WebBotTest.class);
+	
 	WebBot webBot = new WebBot();
 	boolean gotRealCredentials = false;
 	
 	@BeforeAll void beforeTest() throws IOException {
+		myLogger.info("beforeTest");
+		
 		//Hard code test properties
 		Properties appProperties = new Properties();
 		appProperties.put(WebBotConst.APP_PROPERTIES_BROWSER_TYPE, DRIVER_TYPE.FIREFOX.name());
@@ -67,19 +73,25 @@ class WebBotTest {
 	}
 	
 	@AfterAll void afterTest() {
+		myLogger.info("afterTest");
+		
 		webBot.close();
 	}
 	
 	@Test void loginNotEmptyTest() {
+		myLogger.info("loginNotEmptyTest");
 		assertNotEquals(webBot.getLogin(), "", "loginNotEmptyTest");
 	}
 	
 	@Test void passwordNotEmptyTest() {
+		myLogger.info("passwordNotEmptyTest");
 		assertNotEquals(webBot.getPassword(), "", "passwordNotEmptyTest");
 	}
 	
     @Test void logonFailTest() {
     	assumeFalse(gotRealCredentials);
+    	
+    	myLogger.info("logonFailTest");
     	
     	String username = webBot.getLogin();
     	String password = webBot.getPassword();
@@ -91,6 +103,8 @@ class WebBotTest {
     @Test void logonSuccessTest() {
     	assumeTrue(gotRealCredentials);
     	
+    	myLogger.info("logonSuccessTest");
+    	
     	String username = webBot.getLogin();
     	String password = webBot.getPassword();
     	
@@ -100,6 +114,8 @@ class WebBotTest {
     
     @Test void extractNotificationTest() {
     	assumeTrue(gotRealCredentials);
+    	
+    	myLogger.info("extractNotificationTest");
     	
     	//Need logon success 
     	String username = webBot.getLogin();
@@ -122,6 +138,8 @@ class WebBotTest {
     
     @Test void populateYoutubeLinkTest() {
     	assumeTrue(gotRealCredentials);
+    	
+    	myLogger.info("populateYoutubeLinkTest");
     	
     	//Need logon success 
     	String username = webBot.getLogin();
