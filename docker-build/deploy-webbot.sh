@@ -14,6 +14,10 @@ else
     git pull
 fi
 
+if [ -d "${WORKDIR}/moneytab-webbot-${WEBBOT_VERSION}" ]; then
+    rm -rf "${WORKDIR}/moneytab-webbot-${WEBBOT_VERSION}"
+fi
+
 cd ${REPO_DIR}
 
 # build the artifact
@@ -35,5 +39,5 @@ ln -s moneytab-webbot-${WEBBOT_VERSION}/lib lib
 
 # copy required files
 cp moneytab-webbot-${WEBBOT_VERSION}/*.sh .
-cp moneytab-webbot-${WEBBOT_VERSION}/app.properties .
+#cp moneytab-webbot-${WEBBOT_VERSION}/app.properties .
 cp moneytab-webbot-${WEBBOT_VERSION}/log4j2.xml .
