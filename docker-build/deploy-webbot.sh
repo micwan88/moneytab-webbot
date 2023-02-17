@@ -5,8 +5,14 @@ set -o pipefail
 WEBBOT_VERSION=1.0.0-SNAPSHOT
 REPO_DIR=${WORKDIR}/moneytab-webbot
 
-# getting source
-git clone https://github.com/micwan88/moneytab-webbot.git
+if [ ! -d "${REPO_DIR}" ]; then
+    # getting source
+    git clone https://github.com/micwan88/moneytab-webbot.git
+else
+    cd ${REPO_DIR}
+
+    git pull
+fi
 
 cd ${REPO_DIR}
 
