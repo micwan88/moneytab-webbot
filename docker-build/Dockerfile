@@ -63,7 +63,8 @@ RUN apt-get update && apt-get install -y firefox \
 # change to working folder
 WORKDIR ${WORKDIR}
 
-COPY deploy-webbot.sh ${WORKDIR}
+#copy the deployment script into working folder
+COPY deploy-webbot.sh ${WORKDIR}/
 
 # build and deploy
 RUN ./deploy-webbot.sh
