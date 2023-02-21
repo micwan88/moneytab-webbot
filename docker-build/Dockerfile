@@ -70,7 +70,7 @@ COPY deploy-webbot.sh ${WORKDIR}/
 RUN ./deploy-webbot.sh
 
 # copy the app config template to working folder once
-RUN cp ${REPO_DIR}/conf/app.properties ${WORKDIR}/
+RUN cp ${REPO_DIR}/app/conf/app.properties ${WORKDIR}/
 
 # set docker image entry point
 CMD ["./runWebbot.sh"]
