@@ -4,6 +4,8 @@ public class WebBotConst {
 	public static final String NOTIFICATION_TYPE_NEW_VIDEO = "新到影片";
 	public static final String NOTIFICATION_TYPE_IMPORTANT_NEWS = "重要通知";
 	
+	public static final String VIDEO_PAGE_JOIN_BUTTON_LABEL = "立即加入";
+	
 	public static final String NOTIFICATION_DATE_FORMAT_PATTERN = "dd.MM.yyyy";
 	public static final String WEBBOT_CHECKSUM_HISTORY_FILENAME = "checksum.dat";
 	public static final String WEBBOT_COOKIE_DATA_FILENAME = "cookies.dat";

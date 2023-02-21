@@ -747,6 +747,14 @@ public class WebBot implements Closeable {
 					continue;
 				}
 				
+				//Try check if 'join' button here to ensure page loaded fully
+				if (!checkIfVideoPageFullyLoaded()) {
+					notificationItem.setGotError(true);
+					myLogger.warn("Mark notification item has error: {}", notificationItem);
+					gotAnyError = true;
+					continue;
+				}
+				
 				//Need time to load, so need wait
 				WebElement iFrameElement = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
 						.until(driver -> driver.findElement(By.cssSelector("main > section > div + div iframe")));
@@ -863,6 +871,25 @@ public class WebBot implements Closeable {
 		}
 		myLogger.debug("Profile account link not here");
 		myLogger.debug("End loginMoneyTabWeb");
+		return false;
+	}
+	
+	private boolean checkIfVideoPageFullyLoaded() {
+		myLogger.debug("Start checkIfVideoPageFullyLoaded");
+		try {
+			myLogger.debug("Try check if 'join' button exist ...");
+			
+			boolean notExist = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
+					.until(ExpectedConditions.not(ExpectedConditions.textToBePresentInElementLocated(By.cssSelector("span.core-button__text.h4"), 
+							WebBotConst.VIDEO_PAGE_JOIN_BUTTON_LABEL)));
+			
+			myLogger.debug("'join' button not here: {}", notExist);
+			return true;
+		} catch (TimeoutException tie) {
+			//Nothing
+		}
+		myLogger.debug("'join' button is here");
+		myLogger.debug("End checkIfVideoPageFullyLoaded");
 		return false;
 	}
 	
