@@ -880,8 +880,8 @@ public class WebBot implements Closeable {
 			myLogger.debug("Try check if 'join' button exist ...");
 			
 			boolean notExist = new WebDriverWait(webDriver, Duration.ofMillis(waitTimeout))
-					.until(ExpectedConditions.not(ExpectedConditions.textToBePresentInElementLocated(By.cssSelector("span.core-button__text.h4"), 
-							WebBotConst.VIDEO_PAGE_JOIN_BUTTON_LABEL)));
+					.until(ExpectedConditions.invisibilityOfElementWithText(By.cssSelector("span.core-button__text.h4"), 
+							WebBotConst.VIDEO_PAGE_JOIN_BUTTON_LABEL));
 			
 			myLogger.debug("'join' button not here: {}", notExist);
 			return true;
