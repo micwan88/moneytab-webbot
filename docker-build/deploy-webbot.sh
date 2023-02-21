@@ -3,7 +3,6 @@
 set -o pipefail
 
 WEBBOT_VERSION=1.0.0-SNAPSHOT
-REPO_DIR=${WORKDIR}/moneytab-webbot
 
 if [ ! -d "${REPO_DIR}" ]; then
     # getting source

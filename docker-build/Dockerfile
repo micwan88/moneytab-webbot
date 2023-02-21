@@ -3,6 +3,7 @@ FROM ubuntu:22.04
 ENV USER_HOME=/root
 ENV EXTDIR=/media
 ENV WORKDIR=${EXTDIR}/moneytab
+ENV REPO_DIR=${WORKDIR}/moneytab-webbot
 ENV TOOLSDIR=/opt
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 ENV GRADLE_HOME=${TOOLSDIR}/gradle-8.0
@@ -66,6 +67,9 @@ COPY deploy-webbot.sh ${WORKDIR}
 
 # build and deploy
 RUN ./deploy-webbot.sh
+
+# copy the app config template to working folder once
+RUN cp ${REPO_DIR}/conf/app.properties ${WORKDIR}/
 
 # set docker image entry point
 CMD ["./runWebbot.sh"]
