@@ -647,33 +647,41 @@ public class WebBot implements Closeable {
 				WebElement notificationTitleElement = null;
 				WebElement notificationNoLinkDivElement = null;
 				NotificationItem notificationItem = new NotificationItem();
-				WebElement notificationTypeElement = notificationItemElement.findElement(By.cssSelector("div > span + span"));
-				if (notificationTypeElement.getText().trim().equals(WebBotConst.NOTIFICATION_TYPE_NEW_VIDEO)) {
-					notificationLinkElement = notificationItemElement.findElement(By.cssSelector("div + div > a.block[href]"));
-					notificationDateElement = notificationLinkElement.findElement(By.cssSelector("div > span"));
-					notificationTitleElement = notificationLinkElement.findElement(By.cssSelector("div:has(span) + p"));
-					
-					notificationItem.setType(notificationTypeElement.getText().trim());
-					notificationItem.setDateInString(notificationDateElement.getText().trim());
-					notificationItem.setTitle(notificationTitleElement.getText().trim());
-					notificationItem.setFullDescription(notificationLinkElement.getText().trim());
-					notificationItem.setPageLink(notificationLinkElement.getAttribute("href").trim());
-					
-					//Delay the checksum after got video link
-					//notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
-				} else {
-					//No link if just news notification
-					notificationNoLinkDivElement = notificationItemElement.findElement(By.cssSelector("div + div"));
-					notificationDateElement = notificationNoLinkDivElement.findElement(By.cssSelector("div > span"));
-					notificationTitleElement = notificationNoLinkDivElement.findElement(By.cssSelector("div:has(span) + p"));
-					
-					notificationItem.setType(notificationTypeElement.getText().trim());
-					notificationItem.setDateInString(notificationDateElement.getText().trim());
-					notificationItem.setTitle(notificationTitleElement.getText().trim());
-					notificationItem.setFullDescription(notificationNoLinkDivElement.getText().trim());
-					
-					//Delay the checksum after got video link
-					//notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
+
+				try {
+					//Make another try catch so that if individual item got problem, then still can proceed.
+
+					WebElement notificationTypeElement = notificationItemElement.findElement(By.cssSelector("div > span + span"));
+					if (notificationTypeElement.getText().trim().equals(WebBotConst.NOTIFICATION_TYPE_NEW_VIDEO)) {
+						notificationLinkElement = notificationItemElement.findElement(By.cssSelector("div + div > a.block[href]"));
+						notificationDateElement = notificationLinkElement.findElement(By.cssSelector("div > span"));
+						notificationTitleElement = notificationLinkElement.findElement(By.cssSelector("div:has(span) + p"));
+						
+						notificationItem.setType(notificationTypeElement.getText().trim());
+						notificationItem.setDateInString(notificationDateElement.getText().trim());
+						notificationItem.setTitle(notificationTitleElement.getText().trim());
+						notificationItem.setFullDescription(notificationLinkElement.getText().trim());
+						notificationItem.setPageLink(notificationLinkElement.getAttribute("href").trim());
+						
+						//Delay the checksum after got video link
+						//notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
+					} else {
+						//No link if just news notification
+						notificationNoLinkDivElement = notificationItemElement.findElement(By.cssSelector("div + div"));
+						notificationDateElement = notificationNoLinkDivElement.findElement(By.cssSelector("div > span"));
+						notificationTitleElement = notificationNoLinkDivElement.findElement(By.cssSelector("div:has(span) + p"));
+						
+						notificationItem.setType(notificationTypeElement.getText().trim());
+						notificationItem.setDateInString(notificationDateElement.getText().trim());
+						notificationItem.setTitle(notificationTitleElement.getText().trim());
+						notificationItem.setFullDescription(notificationNoLinkDivElement.getText().trim());
+						
+						//Delay the checksum after got video link
+						//notificationItem.setChecksum(DigestUtils.sha256Hex(notificationItem.getFullDescription()));
+					}
+				} catch (NoSuchElementException insideEx) {
+					myLogger.error("Cannot find related element in individual item: " + webDriver.getTitle(), insideEx);
+					return;
 				}
 				
 				if (notifyDateFilter != null && !notifyDateFilter.filterDate(notificationItem)) {
